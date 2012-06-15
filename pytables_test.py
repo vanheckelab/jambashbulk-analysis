@@ -24,6 +24,12 @@ def tables_require_group(root, name, *args, **kwargs):
     except tables.exceptions.NoSuchNodeError:
         return h5f.createGroup(root, name, *args, **kwargs)
 
+def tables_require_table(root, name, dtype):
+    try:
+        return root._f_getChild(name)
+    except tables.exceptions.NoSuchNodeError:
+        return root._v_file.createTable(root, name, dtype)
+
 def createpyTablesNodeForPacking(root, packing):
     Ngroup = tables_require_group(root, "N%i" % packing['N'])
     Pgroup = tables_require_group(Ngroup, "p%.4e" % packing['P0'])
@@ -97,10 +103,8 @@ print os.getcwd()
 
 f = tables.openFile(getPrefix(bbase) + "_tables.h5", mode = "a")
 root = f.root
-try:
-    attrcache = root.packing_attr_cache
-except tables.exceptions.NoSuchNodeError:
-    attrcache = f.createTable(root, 'packing_attr_cache', packing_attr_cache_dtype)
+
+attrcache = tables_require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
 try:
     for base in glob.glob(bbase + "*"):
         for packing in getPackings(base):
