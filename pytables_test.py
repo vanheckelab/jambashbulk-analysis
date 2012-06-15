@@ -66,15 +66,6 @@ packing_attr_cache_dtype = np.dtype([
 ('Uhelper', '<f8'),
 ('path', '|S128')])
 
-def recursor(parent):
-    yield parent
-    try:
-        for children in parent.itervalues():
-            for item in recursor(children):
-                yield item
-    except AttributeError:
-        pass
-
  
 bbase = r"U:\novamaris\simu\Packings\N256"
 

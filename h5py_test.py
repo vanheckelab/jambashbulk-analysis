@@ -33,6 +33,14 @@ def createh5pyNodeForPacking(root, packing):
     #for dim, values in particles.iteritems():
     #    pkgroup.create_dataset(dim, data=values)
 
+def recursor(parent):
+    yield parent
+    try:
+        for children in parent.itervalues():
+            for item in recursor(children):
+                yield item
+    except AttributeError:
+        pass
 
 bbase = r"U:\novamaris\simu\Packings\N256"
 
