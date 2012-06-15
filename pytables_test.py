@@ -16,25 +16,6 @@ from numpy import float64, array
 from load_packing import getPackings 
 from fs_tools import getPrefix
  
-def createh5pyNodeForPacking(root, packing):
-    Ngroup = root.require_group("N%i" % packing['N'])
-    Pgroup = Ngroup.require_group("p%.4e" % packing['P0'])
-    
-    pkgroup_name = "%04i" % packing['PackingNumber']
-    if pkgroup_name in Pgroup:
-        raise Exception("Packing already in hdf5 storage")
-    pkgroup = Pgroup.require_group(pkgroup_name)
-    
-    packing = packing.copy()  
-    particles = packing.pop('particles')
-    
-    for key, value in packing.iteritems():
-        pkgroup.attrs[key] = value
-
-    pkgroup.create_dataset('particles', data=particles)
-    #for dim, values in particles.iteritems():
-    #    pkgroup.create_dataset(dim, data=values)
-
 import tables
 def tables_require_group(root, name, *args, **kwargs):
     h5f = root._v_file
@@ -114,39 +95,19 @@ bbase = r"U:\novamaris\simu\Packings\N256"
 
 print os.getcwd()
 
-run_h5py = False
-if run_h5py:
-    start = time.time()
-    f = h5py.File(getPrefix(bbase) + ".h5",'a')
-    try:
-        for base in glob.glob(bbase + "*"):
-            for packing in getPackings(base):
-                createh5pyNodeForPacking(f, packing)
-    finally:
-        f.flush()
-        f.close()
-    print "insertion: %i s" % (time.time() - start)
-    
-    start = time.time()
-    f = h5py.File(getPrefix(bbase) + ".h5",'a')
-    Z = filter(None, [item.attrs.get('Z') for item in recursor(f)])
-    print "Getting all Z: %i s" % (time.time() - start)
-    print np.median(Z)
-    
-else:
-    f = tables.openFile(getPrefix(bbase) + "_tables.h5", mode = "a")
-    root = f.root
-    try:
-        attrcache = root.packing_attr_cache
-    except tables.exceptions.NoSuchNodeError:
-        attrcache = f.createTable(root, 'packing_attr_cache', packing_attr_cache_dtype)
-    try:
-        for base in glob.glob(bbase + "*"):
-            for packing in getPackings(base):
-                path = createpyTablesNodeForPacking(root, packing)
-                addTo_packing_attr_cache(attrcache, packing, path)
-    finally:
-        f.flush()
-        f.close()    
+f = tables.openFile(getPrefix(bbase) + "_tables.h5", mode = "a")
+root = f.root
+try:
+    attrcache = root.packing_attr_cache
+except tables.exceptions.NoSuchNodeError:
+    attrcache = f.createTable(root, 'packing_attr_cache', packing_attr_cache_dtype)
+try:
+    for base in glob.glob(bbase + "*"):
+        for packing in getPackings(base):
+            path = createpyTablesNodeForPacking(root, packing)
+            addTo_packing_attr_cache(attrcache, packing, path)
+finally:
+    f.flush()
+    f.close()    
     
     
