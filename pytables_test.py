@@ -19,23 +19,29 @@ from fs_tools import getPrefix
 import tables
 from pytables_tools import require_group, require_table, add_to_table, store_table
 
-def createpyTablesNodeForPacking(root, packing):
+def create_group_for_packing(root, packing):
     Ngroup = require_group(root, "N%i" % packing['N'])
     Pgroup = require_group(Ngroup, "p%.4e" % packing['P0'])
     
     pkgroup_name = "%04i" % packing['PackingNumber']
     if pkgroup_name in Pgroup:
         raise Exception("Packing already in hdf5 storage")
-    pkgroup = require_group(Pgroup, pkgroup_name)
+    pkgroup = require_group(Pgroup, pkgroup_name)  
     
+    return pkgroup
+
+def insert_packing(node, packing):
     packing = packing.copy()  
     particles = packing.pop('particles')
     
     for key, value in packing.iteritems():
-        pkgroup._v_attrs[key] = value
+        node._v_attrs[key] = value
     
-    store_table(pkgroup, 'particles', particles)
-    
+    store_table(node, 'particles', particles)    
+
+def createpyTablesNodeForPacking(root, packing):
+    pkgroup = create_group_for_packing(root, packing)
+    insert_packing(pkgroup, packing)
     return pkgroup._v_pathname
 
 
@@ -67,7 +73,7 @@ packing_attr_cache_dtype = np.dtype([
 ('path', '|S128')])
 
  
-bbase = r"U:\novamaris\simu\Packings\N256"
+bbase = r"U:\novamaris\simu\Packings\N16"
 
 print os.getcwd()
 
@@ -78,7 +84,6 @@ attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
 try:
     for base in glob.glob(bbase + "*"):
         for packing in getPackings(base):
-            raise Exception
             path = createpyTablesNodeForPacking(root, packing)
             add_to_table(attrcache, packing, path=path)
 finally:
