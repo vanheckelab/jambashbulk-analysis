@@ -22,7 +22,7 @@ def require_table(root, name, dtype):
         return root._v_file.createTable(root, name, dtype)
 
 def store_table(root, name, data, *args, **kwargs):
-    return root._v_file.createTable(root, name, data, expectedrows=data.shape[0], chunkshape=particles.shape)
+    return root._v_file.createTable(root, name, data, expectedrows=data.shape[0], chunkshape=data.shape)
 
 def add_to_table(table, data={}, **kwargs):
     data = data.copy()
