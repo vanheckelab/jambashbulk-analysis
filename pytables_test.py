@@ -13,18 +13,8 @@ import h5py
 import numpy as np
 from numpy import float64, array
 
-from load_packing import loadPacking
-from load_log import getUniqueParsedLogLines
+from load_packing import getPackings 
 from fs_tools import getPrefix
-
-        
-def getPackings(folder):
-    prefix = getPrefix(folder)
-    for logline in getUniqueParsedLogLines(folder):
-        packingfn = "%s~%04i.txt" % (prefix, logline['PackingNumber'])
-        packing = loadPacking(os.path.join(folder, packingfn))
-        packing.update(logline) # copy information from log line
-        yield packing
  
 def createh5pyNodeForPacking(root, packing):
     Ngroup = root.require_group("N%i" % packing['N'])

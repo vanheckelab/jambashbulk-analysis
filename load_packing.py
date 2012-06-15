@@ -24,8 +24,13 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 ```
 """
 
+import os
+import glob
 import numpy as np
 from numpy import float64
+
+from load_log import getUniqueParsedLogLines
+from fs_tools import getPrefix
 
 def loadPacking(filename):
     retval = {}
@@ -75,3 +80,11 @@ def loadPackingData(raw):
     retval['particles'] = particles
     
     return retval
+   
+def getPackings(folder):
+    prefix = getPrefix(folder)
+    for logline in getUniqueParsedLogLines(folder):
+        packingfn = "%s~%04i.txt" % (prefix, logline['PackingNumber'])
+        packing = loadPacking(os.path.join(folder, packingfn))
+        packing.update(logline) # copy information from log line
+        yield packing
