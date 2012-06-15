@@ -93,3 +93,6 @@ pip-log.txt
 
 # Mac crap
 .DS_Store
+
+# hdf5 data files
+*.h5
