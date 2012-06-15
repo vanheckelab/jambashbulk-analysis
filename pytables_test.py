@@ -17,27 +17,16 @@ from load_packing import getPackings
 from fs_tools import getPrefix
  
 import tables
-def tables_require_group(root, name, *args, **kwargs):
-    h5f = root._v_file
-    try:
-        return root._f_getChild(name)
-    except tables.exceptions.NoSuchNodeError:
-        return h5f.createGroup(root, name, *args, **kwargs)
-
-def tables_require_table(root, name, dtype):
-    try:
-        return root._f_getChild(name)
-    except tables.exceptions.NoSuchNodeError:
-        return root._v_file.createTable(root, name, dtype)
+from pytables_tools import require_group, require_table, add_to_table, store_table
 
 def createpyTablesNodeForPacking(root, packing):
-    Ngroup = tables_require_group(root, "N%i" % packing['N'])
-    Pgroup = tables_require_group(Ngroup, "p%.4e" % packing['P0'])
+    Ngroup = require_group(root, "N%i" % packing['N'])
+    Pgroup = require_group(Ngroup, "p%.4e" % packing['P0'])
     
     pkgroup_name = "%04i" % packing['PackingNumber']
     if pkgroup_name in Pgroup:
         raise Exception("Packing already in hdf5 storage")
-    pkgroup = tables_require_group(Pgroup, pkgroup_name)
+    pkgroup = require_group(Pgroup, pkgroup_name)
     
     packing = packing.copy()  
     particles = packing.pop('particles')
@@ -45,7 +34,7 @@ def createpyTablesNodeForPacking(root, packing):
     for key, value in packing.iteritems():
         pkgroup._v_attrs[key] = value
     
-    root._v_file.createTable(pkgroup, 'particles', particles, expectedrows=max(particles.shape), chunkshape=particles.shape)
+    store_table(pkgroup, 'particles', particles)
     
     return pkgroup._v_pathname
 
@@ -77,16 +66,6 @@ packing_attr_cache_dtype = np.dtype([
 ('Uhelper', '<f8'),
 ('path', '|S128')])
 
-def addTo_packing_attr_cache(cache, packing, path):
-    packing = packing.copy()
-    packing['path'] = path
-    
-    row = cache.row
-    for key in cache.colnames:
-        if key in packing:
-            row[key] = packing[key]
-    row.append()
-
 def recursor(parent):
     yield parent
     try:
@@ -104,12 +83,13 @@ print os.getcwd()
 f = tables.openFile(getPrefix(bbase) + "_tables.h5", mode = "a")
 root = f.root
 
-attrcache = tables_require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
+attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
 try:
     for base in glob.glob(bbase + "*"):
         for packing in getPackings(base):
+            raise Exception
             path = createpyTablesNodeForPacking(root, packing)
-            addTo_packing_attr_cache(attrcache, packing, path)
+            add_to_table(attrcache, packing, path=path)
 finally:
     f.flush()
     f.close()    
