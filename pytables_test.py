@@ -5,11 +5,14 @@ Created on Wed Jun 13 13:33:29 2012
 @author: deen
 """
 
+import warnings
+from tables.path import NaturalNameWarning
+warnings.simplefilter('ignore', NaturalNameWarning)
+
 import os
 import time
 import glob
 
-import h5py
 import numpy as np
 from numpy import float64, array
 
@@ -72,20 +75,26 @@ packing_attr_cache_dtype = np.dtype([
 ('Uhelper', '<f8'),
 ('path', '|S128')])
 
- 
-bbase = r"U:\novamaris\simu\Packings\N16"
+import sys
+bbase = sys.argv[1] #r"/home/merlijn/simu/Packings/N1024"
 
 print os.getcwd()
 
-f = tables.openFile(getPrefix(bbase) + "_tables.h5", mode = "a")
+ff = os.path.join('/data/misc/granulargroup/h5/', getPrefix(bbase) + "_tables.h5")
+
+f = tables.openFile(ff, mode = "a")
 root = f.root
 
 attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
 try:
     for base in glob.glob(bbase + "*"):
         for packing in getPackings(base):
-            path = createpyTablesNodeForPacking(root, packing)
-            add_to_table(attrcache, packing, path=path)
+            try:
+                path = createpyTablesNodeForPacking(root, packing)
+		print path
+                add_to_table(attrcache, packing, path=path)
+            except Exception, e:
+                warnings.warn(str(e), stacklevel=5)
 finally:
     f.flush()
     f.close()    

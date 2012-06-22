@@ -78,6 +78,8 @@ def getLogLines(folder):
             f = open(logfile)
             
         for line in f.xreadlines():
+	    if line.startswith('seed'):
+	        continue
             yield line
         f.close()
 

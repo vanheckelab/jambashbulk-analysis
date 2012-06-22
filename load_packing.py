@@ -50,7 +50,7 @@ def loadPacking(filename):
 def loadPackingData(raw):
     retval = {}
     
-    raw_as_list = "[" + raw.replace("=", ",").replace("{", "(").replace("}", ")") + "]"
+    raw_as_list = "[" + raw.replace("=", ",").replace("{", "(").replace("}", ")").replace("\r", "") + "]"
     variables = ['N', 'L', 'L1', 'L2', 'P', 'P0']
     f = float64
     dtypes    = [int, f  , f   , f   , f  , f   ]
@@ -81,10 +81,19 @@ def loadPackingData(raw):
     
     return retval
    
+
+class PackingWarning(UserWarning):
+    pass
+
 def getPackings(folder):
     prefix = getPrefix(folder)
     for logline in getUniqueParsedLogLines(folder):
-        packingfn = "%s~%04i.txt" % (prefix, logline['PackingNumber'])
-        packing = loadPacking(os.path.join(folder, packingfn))
-        packing.update(logline) # copy information from log line
-        yield packing
+        try:
+            packingfn = "%s~%04i.txt" % (prefix, logline['PackingNumber'])
+            packing = loadPacking(os.path.join(folder, packingfn))
+            packing.update(logline) # copy information from log line
+            yield packing
+        except Exception, e:
+            import warnings
+            warnings.simplefilter("always", PackingWarning)
+            warnings.warn(str(e), PackingWarning)
