@@ -25,16 +25,13 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 """
 
 import os
-import glob
 import numpy as np
 from numpy import float64
 
 from load_log import getUniqueParsedLogLines
 from fs_tools import getPrefix
 
-def loadPacking(filename):
-    retval = {}
-    
+def loadPackings(filename):
     try:
         f = open(filename)
     except Exception:
@@ -42,10 +39,16 @@ def loadPacking(filename):
         time.sleep(30)
         f = open(filename)
         
-    raw = f.read()
+    raw = f.read().strip()
     f.close()
     
-    return loadPackingData(raw)
+    packings = raw.split("\n\n")
+    return [loadPackingData(p) for p in packings]
+    
+def loadPacking(filename):
+    data = loadPackings(filename)
+    assert(len(data) == 1)
+    return data[0]
     
 def loadPackingData(raw):
     retval = {}
@@ -55,7 +58,7 @@ def loadPackingData(raw):
     f = float64
     dtypes    = [int, f  , f   , f   , f  , f   ]
     
-    data = eval(raw_as_list, dict((a,a) for a in ['N', 'L', 'L1', 'L2', 'P', 'P0']))
+    data = eval(raw_as_list, dict((a,a) for a in variables))
     # data = ["N", 64, "L1", [...], ..., [particle positions]]        
     
     # first process the variables
@@ -97,3 +100,6 @@ def getPackings(folder):
             import warnings
             warnings.simplefilter("always", PackingWarning)
             warnings.warn(str(e), PackingWarning)
+
+def getShear(folder):
+    prefix = getPrefix(folder)
