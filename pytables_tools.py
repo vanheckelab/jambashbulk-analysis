@@ -8,7 +8,13 @@ pyTables helper functions
 
 import tables
 
+def require_groups(root, name, *args, **kwargs):
+    names = name.split("/")
+    return reduce(lambda x,y: require_group(x,y,*args,**kwargs), names, root)
+
 def require_group(root, name, *args, **kwargs):
+    if '/' in name:
+        return require_groups(root, name, *args, **kwargs)
     h5f = root._v_file
     try:
         return root._f_getChild(name)
@@ -26,10 +32,12 @@ def store_table(root, name, data, *args, **kwargs):
 
 def add_to_table(table, data={}, **kwargs):
     data = data.copy()
-    data.update(kwargs)
         
     row = table.row
     for key in table.colnames:
         if key in data:
             row[key] = data[key]
+        if key in kwargs:
+            row[key] = kwargs[key]
+            
     row.append()
