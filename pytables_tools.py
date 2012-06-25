@@ -21,11 +21,11 @@ def require_group(root, name, *args, **kwargs):
     except tables.exceptions.NoSuchNodeError:
         return h5f.createGroup(root, name, *args, **kwargs)
 
-def require_table(root, name, dtype):
+def require_table(root, name, dtype, *args, **kwargs):
     try:
         return root._f_getChild(name)
     except tables.exceptions.NoSuchNodeError:
-        return root._v_file.createTable(root, name, dtype)
+        return root._v_file.createTable(root, name, dtype, *args, **kwargs)
 
 def store_table(root, name, data, *args, **kwargs):
     return root._v_file.createTable(root, name, data, expectedrows=data.shape[0], chunkshape=data.shape)

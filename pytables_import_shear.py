@@ -53,8 +53,6 @@ packing_attr_cache_dtype = np.dtype([
 ('creation-date', dtype('|S19')),
 ('path', '|S128')])
 
-sys.argv = ["", r"U:\ilorentz\simulations\Packings\N10~P1e-3", r"E:\Merlijn-SIMU\test.h5"]
-
 if len(sys.argv) != 3:
     print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in>"
     exit(1)
@@ -64,8 +62,6 @@ outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
 
 f = tables.openFile(outfile, mode = "a")
 root = f.root
-
-attrcache = require_table(root, 'shear_attr_cache', packing_attr_cache_dtype)
 
 def shear_type(st):
     if st.startswith("SR"):
@@ -132,6 +128,8 @@ def process_measurement(f, attrcache, key, base, m):
         sys.stdout.flush()
         packings = data.join(log, rsuffix="__")
 
+    attrcache = require_table(group, 'data', packing_attr_cache_dtype,
+                              expectedrows=len(log), chunkshape=(len(log),))
     for rowno, row in packings.iterrows():
         subgroup = require_group(group, "%04i" % row["step#"])
         
