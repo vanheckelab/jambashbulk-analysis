@@ -7,6 +7,7 @@ pyTables helper functions
 """
 
 import tables
+import numpy
 
 def require_groups(root, name, *args, **kwargs):
     names = name.split("/")
@@ -31,13 +32,16 @@ def store_table(root, name, data, *args, **kwargs):
     return root._v_file.createTable(root, name, data, expectedrows=data.shape[0], chunkshape=data.shape)
 
 def add_to_table(table, data={}, **kwargs):
-    data = data.copy()
-        
     row = table.row
     for key in table.colnames:
         if key in data:
             row[key] = data[key]
-        if key in kwargs:
+        elif key in kwargs:
             row[key] = kwargs[key]
+        else:
+            if table.coldtypes[key] == numpy.string_:
+                row[key] = "(unknown)"
+            else:
+                row[key] = numpy.array(0, dtype=table.coldtypes[key]) * nan
             
     row.append()
