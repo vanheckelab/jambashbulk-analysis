@@ -34,10 +34,11 @@ def create_group_for_packing(root, packing):
     return pkgroup
 
 def insert_packing(node, packing):
-    packing = packing.copy()  
-    particles = packing.pop('particles')
+    particles = packing['particles']
     
     for key, value in packing.iteritems():
+        if key == 'particles':
+            continue
         node._v_attrs[key] = value
     
     store_table(node, 'particles', particles)    
@@ -75,28 +76,21 @@ packing_attr_cache_dtype = np.dtype([
 ('Uhelper', '<f8'),
 ('path', '|S128')])
 
-import sys
-bbase = sys.argv[1] #r"/home/merlijn/simu/Packings/N1024"
 
-print os.getcwd()
-
-ff = os.path.join('/data/misc/granulargroup/h5/', getPrefix(bbase) + "_tables.h5")
-
-f = tables.openFile(ff, mode = "a")
-root = f.root
-
-attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
-try:
-    for base in glob.glob(bbase + "*"):
-        for packing in getPackings(base):
-            try:
+if __name__=="__main__":
+    bbase = sys.argv[1]
+    
+    print os.getcwd()
+    
+    f = tables.openFile(sys.argv[2], mode = "a")
+    root = f.root
+    
+    attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
+    try:
+        for base in glob.glob(bbase + "*"):
+            for packing in getPackings(base):
                 path = createpyTablesNodeForPacking(root, packing)
-		print path
                 add_to_table(attrcache, packing, path=path)
-            except Exception, e:
-                warnings.warn(str(e), stacklevel=5)
-finally:
-    f.flush()
-    f.close()    
-    
-    
+    finally:
+        f.flush()
+        f.close()    
