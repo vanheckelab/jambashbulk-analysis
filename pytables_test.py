@@ -33,15 +33,18 @@ def create_group_for_packing(root, packing):
     
     return pkgroup
 
-def insert_packing(node, packing):
-    particles = packing['particles']
-    
+def insert_packing_parameters(node, packing):
     for key, value in packing.iteritems():
         if key == 'particles':
             continue
         node._v_attrs[key] = value
+
+def insert_packing_particles(node, packing):
+    store_table(node, 'particles', packing['particles'])   
     
-    store_table(node, 'particles', particles)    
+def insert_packing(node, packing):
+    insert_packing_parameters(node, packing)
+    insert_packing_particles(node, packing)
 
 def createpyTablesNodeForPacking(root, packing):
     pkgroup = create_group_for_packing(root, packing)

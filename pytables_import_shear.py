@@ -19,7 +19,7 @@ from fs_tools import getPrefix
  
 import tables
 from pytables_tools import require_group, require_table, add_to_table, store_table
-from pytables_test import create_group_for_packing, insert_packing
+from pytables_test import create_group_for_packing, insert_packing_parameters, insert_packing_particles
 
 packing_attr_cache_dtype = np.dtype([
 ('L', dtype('float64')),
@@ -28,7 +28,7 @@ packing_attr_cache_dtype = np.dtype([
 ('N', dtype('int64')),
 ('P', dtype('float64')),
 ('P0', dtype('float64')),
-('eta', dtype('float64')),
+('gamma', dtype('float64')),
 ('s_xy', dtype('float64')),
 ('Ncontacts', dtype('int64')),
 ('Nchanges', dtype('int64')),
@@ -52,6 +52,8 @@ packing_attr_cache_dtype = np.dtype([
 ('gg', dtype('float64')),
 ('creation-date', dtype('|S19')),
 ('path', '|S128')])
+
+sys.argv = ["", r"U:\ilorentz\simulations\Packings\N10~P1e-3", r"E:\Merlijn-SIMU\test.h5"]
 
 if len(sys.argv) != 3:
     print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in>"
@@ -98,19 +100,47 @@ def process_measurement(f, attrcache, key, base, m):
     group = require_group(f,'/'.join(key))
     
     spec = "~".join(m) + ".txt"
-    print key, ":", spec
+    print key, ":", spec,
     
     log, comments = read_csv(os.path.join(base, "log" + spec))
+    print "log",
+    sys.stdout.flush()
+    
     data, comments = read_csv(os.path.join(base, "data" + spec))
-    group._v_attrs['comments'] = comments
-    particles = pandas.DataFrame(loadPackings(os.path.join(base, "particles" + spec)))
+    print "data",
+    sys.stdout.flush()
 
-    packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
+
+    # 'eta' (applied strain) was renamed to gamma
+    if 'eta' in data and 'gamma' not in data:
+        data['gamma'] = data['eta']
+        data.pop('eta')
+        
+    data["gamma"][log["step#"] == 0] = 0 # work around gamma=10^-9 bug
+    
+    group._v_attrs['comments'] = comments
+
+    print "particles",
+    sys.stdout.flush()
+    
+    try:
+        open(os.path.join(base, "particles" + spec)).close()
+        particles = pandas.DataFrame(loadPackings(os.path.join(base, "particles" + spec)))
+        packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
+    except IOError, e:
+        print "(failed: %r)" % e
+        sys.stdout.flush()
+        packings = data.join(log, rsuffix="__")
 
     for rowno, row in packings.iterrows():
-        subgroup = require_group(group, "%04i" % rowno)
-        path = insert_packing(subgroup, row)
+        subgroup = require_group(group, "%04i" % row["step#"])
+        
+        insert_packing_parameters(subgroup, row)
         add_to_table(attrcache, row, path=subgroup._v_pathname)
+        
+        if 'particles' in packings:
+            insert_packing_particles(subgroup, row)
+        
 
 try:
     shear_measurements = [os.path.split(fn)[1][4:-4].split("~")
