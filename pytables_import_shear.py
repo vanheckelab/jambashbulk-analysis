@@ -5,14 +5,13 @@ Created on Wed Jun 13 13:33:29 2012
 @author: deen
 """
 
-import os
+import os, sys
 import time
 import glob
 import itertools
 import pandas
-import h5py
 import numpy as np
-from numpy import float64, array
+from numpy import float64, array, dtype
 
 from load_packing import loadPackings 
 from fs_tools import getPrefix
@@ -70,11 +69,11 @@ def shear_type(st):
         return st
 
 def groupkey(args):
-    N,P,st,step,number = args
+    N,P,st,step,number = args[0]
     return N,P,number,shear_type(st)
     
 def sortkey(args):
-    return list(groupkey(args)) + args
+    return list(groupkey(args)) + args[0]
 
 def read_csv(fn):
     f = open(fn)
@@ -91,11 +90,10 @@ def read_csv(fn):
             break
     return pandas.read_csv(f, sep="[ \t]"), comments
 
-def process_measurement(f, attrcache, key, base, m):
-    
+def process_measurement(f, key, base, m, spec):
     group = require_group(f,'/'.join(key))
     
-    spec = "~".join(m) + ".txt"
+#    spec = "~".join(m) + ".txt"
     print key, ":", spec,
     
     log, comments = read_csv(os.path.join(base, "log" + spec))
@@ -138,18 +136,29 @@ def process_measurement(f, attrcache, key, base, m):
         
         if 'particles' in packings:
             insert_packing_particles(subgroup, row)
+    
+    attrcache.flush()
         
 
+def key_for_fn(fn):
+  part1 = os.path.split(os.path.split(fn)[0])[1].split("~") 
+  part2 = os.path.split(fn)[1][4:-4].split("~")[2:]
+  return list(part1) + list(part2)
+
+
 try:
-    shear_measurements = [os.path.split(fn)[1][4:-4].split("~")
+    shear_measurements = [(key_for_fn(fn), fn)
                             for fn
-                            in glob.glob(bbase + r"\data*.txt")]
-    
+                            in glob.glob(bbase + "*/data*.txt")]
     for key, measurements in itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey):
         for m in measurements:
             pass
-        
-        process_measurement(root, attrcache, key, bbase, m)        
+        print key
+	try:
+	  print root, key, os.path.split(m[1])[0], m[0]
+          process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
+	except Exception, e:
+	  print key, e
 finally:
     f.flush()
     f.close()

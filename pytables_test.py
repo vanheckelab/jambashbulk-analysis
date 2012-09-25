@@ -9,6 +9,7 @@ import warnings
 from tables.path import NaturalNameWarning
 warnings.simplefilter('ignore', NaturalNameWarning)
 
+import sys
 import os
 import time
 import glob
@@ -92,6 +93,7 @@ if __name__=="__main__":
     try:
         for base in glob.glob(bbase + "*"):
             for packing in getPackings(base):
+		print packing['N'], packing['P'], packing['PackingNumber']
                 path = createpyTablesNodeForPacking(root, packing)
                 add_to_table(attrcache, packing, path=path)
     finally:

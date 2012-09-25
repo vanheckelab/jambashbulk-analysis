@@ -42,6 +42,6 @@ def add_to_table(table, data={}, **kwargs):
             if table.coldtypes[key] == numpy.string_:
                 row[key] = "(unknown)"
             else:
-                row[key] = numpy.array(0, dtype=table.coldtypes[key]) * nan
+                row[key] = numpy.array(0, dtype=table.coldtypes[key]) * numpy.nan
             
     row.append()
