@@ -119,8 +119,13 @@ def process_measurement(f, key, base, m, spec):
     
     try:
         open(os.path.join(base, "particles" + spec)).close()
-        particles = pandas.DataFrame(loadPackings(os.path.join(base, "particles" + spec)))
+	particles = loadPackings(os.path.join(base, "particles" + spec))
+	particles = [particles[0]] + particles[1::2]
+        particles = pandas.DataFrame(particles)
+	print len(particles)
+	print len(data)
         packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
+	print len(packings)
     except IOError, e:
         print "(failed: %r)" % e
         sys.stdout.flush()
