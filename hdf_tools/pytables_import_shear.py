@@ -143,6 +143,7 @@ def process_measurement(f, key, base, m, spec):
             insert_packing_particles(subgroup, row)
     
     attrcache.flush()
+    f.flush()
         
 
 def key_for_fn(fn):
@@ -163,10 +164,12 @@ try:
 	  print root, key, os.path.split(m[1])[0], m[0]
           process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
 	except Exception, e:
+	  raise
 	  print key, e
 finally:
     f.flush()
     f.close()
+print "rrr"
 #try:
 #    for base in glob.glob(bbase + "*"):
 #        for packing in getPackings(base):

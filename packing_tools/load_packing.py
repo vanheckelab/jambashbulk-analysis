@@ -25,8 +25,11 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 """
 
 import os
+import re
 import numpy as np
-from numpy import float64
+import jamBashbulk
+
+from numpy import float64, float128, array
 
 from load_log import getUniqueParsedLogLines
 from fs_tools import getPrefix
@@ -49,16 +52,29 @@ def loadPacking(filename):
     data = loadPackings(filename)
     assert(len(data) == 1)
     return data[0]
+
+def parse_longdouble(value):
+    import ctypes
+    from ctypes import c_longdouble, pointer
+
+    val = c_longdouble()
+    val_ptr = pointer(val)
+    ctypes.cdll.LoadLibrary("libc.so.6").sscanf(value, "%Le", val_ptr)
+
+    return np.ctypeslib.as_array(val_ptr, (1,))[0]
     
 def loadPackingData(raw):
     retval = {}
-    
     raw_as_list = "[" + raw.replace("=", ",").replace("{", "(").replace("}", ")").replace("\r", "") + "]"
+    raw_as_list = re.sub("([0-9]+\.[0-9]+)", r"ld('\1')", raw_as_list)
+
     variables = ['N', 'L', 'L1', 'L2', 'P', 'P0']
-    f = float64
-    dtypes    = [int, f  , f   , f   , f  , f   ]
+    f = np.longdouble
+    dtypes    = [np.int32, f  , f   , f   , f  , f   ]
     
-    data = eval(raw_as_list, dict((a,a) for a in variables))
+    eval_environ = dict((a,a) for a in variables)
+    eval_environ['ld'] = parse_longdouble
+    data = eval(raw_as_list, eval_environ)
     # data = ["N", 64, "L1", [...], ..., [particle positions]]        
     
     # first process the variables
@@ -73,12 +89,29 @@ def loadPackingData(raw):
     particles = np.array(data[-1]) # [x1, y1, r1, x2, ...]
     particles = particles.reshape((particles.size/3, 3)) # [[x1, y1, r1], [x2, ...]] 
     particles = particles.transpose()
-    
-    particles.dtype = [('x', float64), ('y', float64), ('r', float64)]
-    
-    particles = particles[0] # hack around structured array creation; for some
+    x = particles[0]
+    y = particles[1]
+    r = particles[2]
+
+    convertedVectors = jamBashbulk.convertLvectors(retval["L1"], retval["L2"])
+    retval['alpha'] = convertedVectors['alpha']
+    retval['delta'] = convertedVectors['delta']
+    for key, value in jamBashbulk.get_packing_data(retval["N"], retval["P0"], x, y, r, **convertedVectors).iteritems():
+        retval[key+"_calc"] = value
+
+
+    x_major = float64(x); x_minor = float64(x-float128(x_major))
+    y_major = float64(y); y_minor = float64(y-float128(y_major))
+    r = float64(r)
+
+    particles = array(zip(x_major, x_minor, y_major, y_minor, r), dtype=[('x', float64), ('x_err', float64),
+                                                                         ('y', float64), ('y_err', float64),
+                                                                         ('r', float64)])
+
+#    particles = particles[0] # hack around structured array creation; for some
                              # reason there is a wrapping [ ]; this removes that.
-    
+   
+    # split particles in two float64 parts
     #particles.dtype.names = ['x', 'y', 'r']
     retval['particles'] = particles
     

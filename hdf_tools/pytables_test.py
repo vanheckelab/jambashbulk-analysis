@@ -34,11 +34,21 @@ def create_group_for_packing(root, packing):
     
     return pkgroup
 
+def insert_attribute(node, key, value):
+    if getattr(value, 'dtype', type(value)) == np.float128:
+        #long double. split in two entries
+        major = np.float64(value)
+        minor = np.float64(value - np.float128(major))
+        insert_attribute(node, key, major)
+        insert_attribute(node, key+"_err", minor)
+        return
+    node._v_attrs[key] = value
+
 def insert_packing_parameters(node, packing):
     for key, value in packing.iteritems():
         if key == 'particles':
             continue
-        node._v_attrs[key] = value
+        insert_attribute(node, key, value)
 
 def insert_packing_particles(node, packing):
     store_table(node, 'particles', packing['particles'])   
@@ -78,10 +88,15 @@ packing_attr_cache_dtype = np.dtype([
 ('dU', '<f8'),
 ('maxGrad', '<f8'),
 ('Uhelper', '<f8'),
+('Z_calc', '<f8'),
 ('path', '|S128')])
 
 
 if __name__=="__main__":
+    if len(sys.argv) != 3:
+        print "Usage: %s <glob base> <output hdf file>" % sys.argv[0]
+        sys.exit(1)
+
     bbase = sys.argv[1]
     
     print os.getcwd()
