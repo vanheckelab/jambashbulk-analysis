@@ -370,7 +370,6 @@ def El_Con(K,rattlers,packing):
 	
 	
 	c=np.array([c1,c2,c3,c4,c5,c6],dtype=float128)
-	c=c/L**2
 	
 	return {'c':c,'Gdc':Gdc,'Gac':Gac,'Udc':Udc,'Uac':Uac,'Dac':Dac}
 	
