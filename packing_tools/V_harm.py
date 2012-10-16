@@ -1,13 +1,13 @@
 import numpy as np
 from numpy import floor, sqrt, sum, tril, where, diag, float128, array, int8
 
-from scipy import linalg as LA
+from numpy import linalg as LA
 
 from copy import copy
 
 def get_contacts(packing):
 	""" In: packing={'particles': {'x': [...], 'y': [...], 'r': [...]},
-	                {'alpha': ..., 'delta': ..., 'L': ...}}
+	                {'L1': ..., 'L2': ..., 'L': ...}}
 
 	    Out: {xij, yij, connmatrix (= Cij)}
 	"""
@@ -25,10 +25,8 @@ def get_contacts(packing):
 	Ri, Rj = np.meshgrid(particles['r'], particles['r'])
 	Rij=Ri+Rj
 	
-	lyy = L*(1+delta)
-	lxx = L/(1+delta)
-	lyx = L*alpha
-	lxy = 0		
+	lxx, lxy = packing["L1"]
+	lyx, lyy = packing["L2"]
 
 	xij = xj-xi
 	yij = yj-yi
