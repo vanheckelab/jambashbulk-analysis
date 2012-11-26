@@ -27,9 +27,9 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 import os
 import re
 import numpy as np
-import jamBashbulk
+#import jamBashbulk
 
-from numpy import float64, float128, array
+from numpy import float64, array, float64 as float128
 
 from load_log import getUniqueParsedLogLines
 from fs_tools import getPrefix
@@ -59,7 +59,10 @@ def parse_longdouble(value):
 
     val = c_longdouble()
     val_ptr = pointer(val)
-    ctypes.cdll.LoadLibrary("libc.so.6").sscanf(value, "%Le", val_ptr)
+    try:
+        ctypes.cdll.LoadLibrary("libc.so.6").sscanf(value, "%Le", val_ptr)
+    except WindowsError:
+        return float(value)
 
     return np.ctypeslib.as_array(val_ptr, (1,))[0]
     
@@ -93,11 +96,11 @@ def loadPackingData(raw):
     y = particles[1]
     r = particles[2]
 
-    convertedVectors = jamBashbulk.convertLvectors(retval["L1"], retval["L2"])
-    retval['alpha'] = convertedVectors['alpha']
-    retval['delta'] = convertedVectors['delta']
-    for key, value in jamBashbulk.get_packing_data(retval["N"], retval["P0"], x, y, r, **convertedVectors).iteritems():
-        retval[key+"_calc"] = value
+    #convertedVectors = jamBashbulk.convertLvectors(retval["L1"], retval["L2"])
+    #retval['alpha'] = convertedVectors['alpha']
+    #retval['delta'] = convertedVectors['delta']
+    #for key, value in jamBashbulk.get_packing_data(retval["N"], retval["P0"], x, y, r, **convertedVectors).iteritems():
+    #    retval[key+"_calc"] = value
 
 
     x_major = float64(x); x_minor = float64(x-float128(x_major))
