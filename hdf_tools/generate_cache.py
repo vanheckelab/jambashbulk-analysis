@@ -6,7 +6,11 @@
 
 """
 
-basepath = r"/data/misc/granulargroup/h5/"
+import socket
+if socket.gethostname() == "Isilwen":
+    basepath = "d:/h5/"
+else:
+    basepath = r"/data/misc/granulargroup/h5/"
 
 from pylab import *
 import numpy as np
@@ -17,7 +21,13 @@ import tables
 import itertools
 import pytables_tools
 
-G_hess_data = np.load(basepath + "Cs.npy")
+def loadnpy(fn):
+    try:
+        return np.load(fn)
+    except ValueError:
+        return np.load(fn + ".reduced.npy")
+
+G_hess_data = loadnpy(basepath + "Cs.npy")
 
 def dictlistgroupby(d, keys):
     key = lambda i: [i[key] for key in keys]
