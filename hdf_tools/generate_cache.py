@@ -37,14 +37,12 @@ def determine_cs_indices(data):
     return where(data['gamma'] == gamma_min)[0][0], where(data['gamma'] == gamma_plus)[0][0]
 
 def determine_G(data):
-    gamma0 = amin(data["gamma"])
-    gamma1 = amin(data["gamma"][data["gamma"] > gamma0])
+    data = np.ma.MaskedArray(data, data["gamma"]==0)
+    minID = argmin(data["gamma"])
+    gamma = data["gamma"][minID]
+    sigma = data["s_xy"][minID]
     
-    sigma0 = data["s_xy"][data["gamma"] == gamma0][0]
-    sigma1 = data["s_xy"][data["gamma"] == gamma1][0]
-    
-    G = (sigma1-sigma0)/(gamma1-gamma0)
-    return G
+    return sigma/gamma
     
 def determine_particle_movement(packing, i0, i1):
     particles0 = packing.SR.__getattr__("%04i" % i0).particles.read()
