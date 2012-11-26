@@ -17,6 +17,8 @@ import tables
 import itertools
 import pytables_tools
 
+G_hess_data = np.load(basepath + "Cs.npy")
+
 def dictlistgroupby(d, keys):
     key = lambda i: [i[key] for key in keys]
     
@@ -26,23 +28,22 @@ def dictlistgroupby(d, keys):
 
 
 def determine_cs_indices(data):   
-    try:
-        firstchange = unique(data["Nchanges"])[1]
-    except IndexError:
-        raise NotEnoughDataException("no rearrangement")
+    basechange = unique(data["Nchanges"])[0]
     
-    gamma_plus = amin(data['gamma'][data['Nchanges'] == firstchange])
+    gamma_plus = amin(data['gamma'][data['Nchanges'] > basechange])
     gamma_min = amax(data['gamma'][data['gamma'] < gamma_plus])
     
     return where(data['gamma'] == gamma_min)[0][0], where(data['gamma'] == gamma_plus)[0][0]
 
 def determine_G(data):
-    data = np.ma.MaskedArray(data, data["gamma"]==0)
-    minID = argmin(data["gamma"])
-    gamma = data["gamma"][minID]
-    sigma = data["s_xy"][minID]
+    gamma0 = amin(data["gamma"])
+    gamma1 = amin(data["gamma"][data["gamma"] > gamma0])
     
-    return sigma/gamma
+    sigma0 = data["s_xy"][data["gamma"] == gamma0][0]
+    sigma1 = data["s_xy"][data["gamma"] == gamma1][0]
+    
+    G = (sigma1-sigma0)/(gamma1-gamma0)
+    return G
     
 def determine_particle_movement(packing, i0, i1):
     particles0 = packing.SR.__getattr__("%04i" % i0).particles.read()
@@ -66,14 +67,28 @@ def get_data_row(packing, packing_base):
     
     N = data["N"][0]
     P = data["P0"][0]    
-        
     
-    retval = {'N': N, 'P': P, 'num': num, 'G': G,
+    try:
+        Cs = G_hess_data[(G_hess_data["N"] == N) * (abs(G_hess_data["P"] - P) < abs(P*1e-5)) * (G_hess_data[ "PackingNumber"] == num)][0]
+    except Exception, e:
+        print e
+        Cs = None
+    
+    retval = {'N': N, 'P': P, 'num': num, 'G_first': G,
               'i_min': i_min, 'i_plus': i_plus}
-    
+    for i in range(1,7):
+        key = "c%i" % i
+        if Cs is None:
+            retval[key] = np.nan
+        else:
+            retval[key] = Cs[key]
+
     retval.update(Neff_min= N-data["#rattler"][i_min],
                   Neff_plus= N-data["#rattler"][i_plus])
-    retval['Z_calc'] = packing_base._v_attrs["Z_calc"]              
+    for key in packing_base._v_attrs._v_attrnames:
+        if isinstance(packing_base._v_attrs[key], np.float64):
+            retval[key+"_base"] = packing_base._v_attrs[key]
+
     for v in ['L', 'P', 
               'gamma', 's_xy', 'Ncontacts',
               'Nchanges', 'N+', 'N-',
@@ -89,13 +104,6 @@ def get_data_row(packing, packing_base):
             v + "_plus" : data[v][i_plus]
         })
         
-    retval['deltapos_euclidian'] = np.nan
-    try:    
-        retval['deltapos_euclidian'] = determine_particle_movement(packing, i_min, i_plus)
-    except Exception, e:
-        print e
-    
-    
     return retval
 
 
@@ -129,7 +137,7 @@ def store_data_rows():
     first = it.next()
     cols = first.keys()
     
-    f = tables.File(basepath + r"/shear_summary.h5", "w")
+    f = tables.File(basepath + r"/shear_summary_noparticles.h5", "w")
 
     df = pandas.DataFrame([first.values()], columns=cols)
     df = df.to_records()
