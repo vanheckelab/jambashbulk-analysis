@@ -96,3 +96,5 @@ pip-log.txt
 
 # hdf5 data files
 *.h5
+
+output
