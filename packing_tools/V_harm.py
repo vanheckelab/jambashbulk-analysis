@@ -1,5 +1,9 @@
 import numpy as np
-from numpy import floor, sqrt, sum, tril, where, diag, float128, array, int8
+from numpy import floor, sqrt, sum, tril, where, diag, array, int8
+try:
+    from numpy import float128
+except ImportError:
+    from numpy import float96 as float128
 
 from numpy import linalg as LA
 
@@ -12,12 +16,16 @@ def get_contacts(packing):
 	    Out: {xij, yij, connmatrix (= Cij)}
 	"""
 	particles = packing['particles']
-	alpha, delta = packing['alpha'], packing['delta']
 	L = packing['L']
 	
-	x=float128(particles['x'])+float128(particles['x_err'])
-	y=float128(particles['y'])+float128(particles['y_err'])
-	
+	x=float128(particles['x'])
+	y=float128(particles['y'])
+ 
+	try:
+		x += float128(particles['x_err'])
+		y += float128(particles['y_err'])
+	except ValueError:
+		pass
 	
 	xi, xj = np.meshgrid(particles['x'], particles['x'])
 	yi, yj = np.meshgrid(particles['y'], particles['y'])
