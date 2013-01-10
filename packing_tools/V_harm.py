@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 from numpy import floor, sqrt, sum, tril, where, diag, array, int8
 try:
@@ -299,6 +300,15 @@ def LinDef(K,rat,strain,packing):
         
         F0_ket=-F_ket[0:sK-4]
 
+        # $ K^{-1} = Q \Lambda Q^{-1} $
+        #   Q = [v1, v2, v3, v4] (columns), Q^{-1} = Q.T
+        #
+        # so: u = K^{-1} F = Q \Lambda^{-1} Q^{-1} F
+        # where       proj =   \Lambda^{-1} Q^{-1} F
+        #           resp_0 = Q \Lambda^{-1} Q^{-1} F
+        # with the detail that we set 1/λ = 0 if λ = 0 - a zero eigenvalue
+        # means a zero-energy mode (not an infinite-energy mode)
+        
         proj = (V.transpose().dot(F0_ket))/lam
         proj[0:2]=0
         
