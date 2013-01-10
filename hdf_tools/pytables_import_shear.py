@@ -52,16 +52,6 @@ packing_attr_cache_dtype = np.dtype([
 ('creation-date', dtype('|S19')),
 ('path', '|S128')])
 
-if len(sys.argv) != 3:
-    print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in>"
-    exit(1)
-
-bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
-outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
-
-f = tables.openFile(outfile, mode = "a")
-root = f.root
-
 def shear_type(st):
     if st.startswith("SR"):
         return "SR"
@@ -151,25 +141,35 @@ def key_for_fn(fn):
   part2 = os.path.split(fn)[1][4:-4].split("~")[2:]
   return list(part1) + list(part2)
 
-
-try:
-    shear_measurements = [(key_for_fn(fn), fn)
-                            for fn
-                            in glob.glob(bbase + "*/data*.txt")]
-    for key, measurements in itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey):
-        for m in measurements:
-            pass
-        print key
-	try:
-	  print root, key, os.path.split(m[1])[0], m[0]
-          process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
-	except Exception, e:
-	  raise
-	  print key, e
-finally:
-    f.flush()
-    f.close()
-print "rrr"
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in>"
+        exit(1)
+    
+    bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
+    outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
+    
+    f = tables.openFile(outfile, mode = "a")
+    root = f.root
+    
+    try:
+        shear_measurements = [(key_for_fn(fn), fn)
+                                for fn
+                                in glob.glob(bbase + "*/data*.txt")]
+        for key, measurements in itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey):
+            for m in measurements:
+                pass
+            print key
+            try:
+                print root, key, os.path.split(m[1])[0], m[0]
+                process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
+            except Exception, e:
+                raise
+                print key, e
+    finally:
+        f.flush()
+        f.close()
+        print "rrr"
 #try:
 #    for base in glob.glob(bbase + "*"):
 #        for packing in getPackings(base):
