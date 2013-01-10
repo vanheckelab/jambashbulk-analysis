@@ -37,8 +37,8 @@ def dictlistgroupby(d, keys):
         yield dict(zip(keys, group)), [v for v in values]
 
 
-def determine_cs_indices(data):   
-    basechange = unique(data["Nchanges"])[0]
+def determine_cs_indices(data, num=0):   
+    basechange = array(unique(data["Nchanges"]))[num]
     
     gamma_plus = amin(data['gamma'][data['Nchanges'] > basechange])
     gamma_min = amax(data['gamma'][data['gamma'] < gamma_plus])
@@ -46,15 +46,19 @@ def determine_cs_indices(data):
     return where(data['gamma'] == gamma_min)[0][0], where(data['gamma'] == gamma_plus)[0][0]
 
 def determine_G(data):
-    gamma0 = amin(data["gamma"])
-    gamma1 = amin(data["gamma"][data["gamma"] > gamma0])
+    gamma = amin(data["gamma"][data["gamma"] > 0])
+    sigma = data["s_xy"][data["gamma"] == gamma][0]
     
-    sigma0 = data["s_xy"][data["gamma"] == gamma0][0]
-    sigma1 = data["s_xy"][data["gamma"] == gamma1][0]
-    
-    G = (sigma1-sigma0)/(gamma1-gamma0)
+    G = sigma/gamma
     return G
     
+    
+def determine_Glambda2(data, i_min):
+    d = data[data["gamma"] <= data["gamma"][i_min]]
+    
+    lambda2, G2, zero2 = polyfit(d["gamma"], d["s_xy"], 2)
+    return {'lambda2': lambda2, 'G2': G2, 'zero2': zero2}
+        
 def determine_particle_movement(packing, i0, i1):
     particles0 = packing.SR.__getattr__("%04i" % i0).particles.read()
     particles1 = packing.SR.__getattr__("%04i" % i1).particles.read()
@@ -75,6 +79,8 @@ def get_data_row(packing, packing_base):
     
     i_min, i_plus = determine_cs_indices(data)
     
+    quadrG = determine_Glambda2(data, i_min)
+    
     N = data["N"][0]
     P = data["P0"][0]    
     
@@ -86,6 +92,7 @@ def get_data_row(packing, packing_base):
     
     retval = {'N': N, 'P': P, 'num': num, 'G_first': G,
               'i_min': i_min, 'i_plus': i_plus}
+    retval.update(quadrG)
     for i in range(1,7):
         key = "c%i" % i
         if Cs is None:
