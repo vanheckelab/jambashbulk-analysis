@@ -27,7 +27,11 @@ def loadnpy(fn):
     except ValueError:
         return np.load(fn + ".reduced.npy")
 
-G_hess_data = loadnpy(basepath + "Cs.npy")
+try:
+    G_hess_data = loadnpy(basepath + "Cs.npy")
+except Exception:
+    print "Not including G_hess data in generated files!"
+    G_hess_data = None
 
 def dictlistgroupby(d, keys):
     key = lambda i: [i[key] for key in keys]

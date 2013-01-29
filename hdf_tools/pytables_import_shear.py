@@ -13,8 +13,7 @@ import pandas
 import numpy as np
 from numpy import float64, array, dtype
 
-from load_packing import loadPackings 
-from fs_tools import getPrefix
+from packing_tools.load_packing import loadPackings 
  
 import tables
 from pytables_tools import require_group, require_table, add_to_table, store_table

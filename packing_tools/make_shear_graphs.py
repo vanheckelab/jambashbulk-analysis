@@ -5,7 +5,8 @@ Created on Wed Dec 12 11:42:13 2012
 @author: Merlijn van Deen
 """
 import sys
-sys.path.append("../hdf_tools")
+import os
+sys.path.append(os.path.split(__file__)[0] + "/../hdf_tools")
 
 import pylab
 import pandas
@@ -49,13 +50,6 @@ def determine_all_cs_indices(data):
             num += 1
     except ValueError:
         raise StopIteration
-
-base_path = r"D:\h5\N2048-large-shear" + "\\"
-#name = "N2048~P1e-6~SR050~step101~9004"
-name = "N2048~P1e-2~SS0e-2~step2000~9004"
-data, comment = read_log(name)
-
-#indices = [0] + [x[1] for x in determine_all_cs_indices(data)]
 
 def scalefig(pack, extent=0.1):
         xmin = (                min(0, pack['L2'][0]))
@@ -126,7 +120,15 @@ def plotparticles(pack, **kwargs):
 def doPackingStuff(pack):
     plotunitcell(pack)
     plotparticles(pack)
-#
+
+#base_path = r"D:\h5\N2048-large-shear" + "\\"
+#name = "N2048~P1e-6~SR050~step101~9004"
+#name = "N2048~P1e-2~SS0e-2~step2000~9004"
+#data, comment = read_log(name)
+
+#indices = [0] + [x[1] for x in determine_all_cs_indices(data)]
+
+
 #ioff()
 #startpack = None
 #startnumconts = None
