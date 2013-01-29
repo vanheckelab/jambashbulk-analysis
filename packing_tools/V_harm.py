@@ -4,6 +4,7 @@ from numpy import floor, sqrt, sum, tril, where, diag, array, int8
 try:
     from numpy import float128
 except ImportError:
+    print "float96 instead of float128..."
     from numpy import float96 as float128
 
 from numpy import linalg as LA
@@ -17,7 +18,6 @@ def get_contacts(packing):
         Out: {xij, yij, connmatrix (= Cij)}
     """
     particles = packing['particles']
-    L = packing['L']
     
     x=float128(particles['x'])
     y=float128(particles['y'])
@@ -26,6 +26,8 @@ def get_contacts(packing):
         x += float128(particles['x_err'])
         y += float128(particles['y_err'])
     except ValueError:
+        pass
+    except KeyError:
         pass
     
     xi, xj = np.meshgrid(particles['x'], particles['x'])
@@ -36,6 +38,8 @@ def get_contacts(packing):
     
     lxx, lxy = packing["L1"]
     lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
 
     xij = xj-xi
     yij = yj-yi
@@ -75,12 +79,10 @@ def V_harm(conts,packing):
     
     # packing global data : 
     P0=packing['P0']
-    alpha, delta = packing['alpha'], packing['delta']
-    L = packing['L']
-    lyy = L*(1+delta)
-    lxx = L/(1+delta)
-    lyx = L*alpha
-    lxy = 0
+    lxx, lxy = packing["L1"]
+    lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
     
     # distancs matrices
     xij = conts['xij']
@@ -106,12 +108,11 @@ def grad(conts,packing):
     # packing global data : 
     P0=packing['P0']
     particles=packing['particles']
-    alpha, delta = packing['alpha'], packing['delta']
-    L = packing['L']
-    lyy = L*(1+delta)
-    lxx = L/(1+delta)
-    lyx = L*alpha
-    lxy = 0
+ 
+    lxx, lxy = packing["L1"]
+    lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
     r=particles['r']
     
     
@@ -172,12 +173,11 @@ def Hess(conts,packing):
     # packing global data : 
     P0=packing['P0']
     particles=packing['particles']
-    alpha, delta = packing['alpha'], packing['delta']
-    L = packing['L']
-    lyy = L*(1+delta)
-    lxx = L/(1+delta)
-    lyx = L*alpha
-    lxy = 0
+
+    lxx, lxy = packing["L1"]
+    lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
     r=particles['r']
     # distancs matrices
     xij = conts['xij']
@@ -269,15 +269,20 @@ def LinDef(K,rat,strain,packing):
     dU=np.array([])
     sz=strain.shape
     
-    L = packing['L']
     L1=packing['L1']
     L2=packing['L2']
+    
+    lxx, lxy = packing["L1"]
+    lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
     
     if sz[1]!=3 :
             sys.exit("wrong strain input")
     
-    Nr=packing['N']-rat.size
-    all_rat=np.append(rat,rat+packing['N'])
+    N = packing['particles'].shape[0]
+    Nr= N-rat.size
+    all_rat=np.append(rat,rat+N)
 
     K= np.delete(K,all_rat,0)
     K= np.delete(K,all_rat,1)
@@ -291,11 +296,9 @@ def LinDef(K,rat,strain,packing):
    
     for line in strain:
         Str_Ts=np.array([line[0],line[2],line[2],line[1]]).reshape(2,2)
-
         defor=np.array([Str_Ts.dot(L1),Str_Ts.dot(L2)]).reshape(4,1)
 
         def_ket=np.append(np.zeros((1,2*Nr),dtype=float128),defor)
-
         F_ket=K.dot(def_ket)
         
         F0_ket=-F_ket[0:sK-4]
@@ -315,7 +318,7 @@ def LinDef(K,rat,strain,packing):
         resp_0=np.append(V.dot(proj),np.zeros((1,4),dtype=float128))
 
         response = def_ket+resp_0
-        
+
         Edif=0.5*response.transpose().dot(K).dot(response)
         
         dU=np.append(dU,Edif)
@@ -325,7 +328,10 @@ def LinDef(K,rat,strain,packing):
 # El_con : calls lin-def for some given strains and deduces the elastic constants.
 
 def El_Con(K,rattlers,packing):
-    L = packing['L']
+    lxx, lxy = packing["L1"]
+    lyx, lyy = packing["L2"]
+    
+    L = sqrt(lxx * lyy)
     strain =np.array([[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]])
 
     dU=LinDef(K,rattlers,strain,packing)

@@ -27,10 +27,11 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 import os
 import re
 import numpy as np
+import itertools
 #import jamBashbulk
 
 from numpy import float64, array, float64 as float128
-
+from numpy import loadtxt
 from load_log import getUniqueParsedLogLines
 from fs_tools import getPrefix
 
@@ -49,9 +50,30 @@ def loadPackings(filename):
     return [loadPackingData(p) for p in packings]
     
 def loadPacking(filename):
+    if os.path.split(filename)[1].lower().startswith('xconf'):
+        return read_xconf(filename)
     data = loadPackings(filename)
     assert(len(data) == 1)
     return data[0]
+
+def read_xconf(filename):
+    """Load Packing from the ancient XConf format"""
+    f = open(filename)
+    precomments = list(itertools.takewhile(lambda x: x.startswith("#"), f))
+    lx, ly = array([[float(fl) for fl in x.split("=")[1].split()] for x in precomments[-2:]])
+    data = loadtxt(itertools.takewhile(lambda x: not x.startswith("#"), f))
+    postcomments = list(itertools.takewhile(lambda x: x.startswith("#"), f))
+    P0 = float(postcomments[0].split("=")[1].strip().split()[0])
+    
+    particles = data.view([('r', '<f8'), ('x', '<f8'), ('y', '<f8')])[:,0]
+    particles['x'], particles['y'] = (particles['x'] * lx[:,np.newaxis] + particles['y'] * ly[:,np.newaxis])
+    
+    
+    f.close()    
+    packing = {'L1': lx, 'L2': ly, 'P0': P0,
+               'particles': particles}
+
+    return packing
 
 def parse_longdouble(value):
     import ctypes

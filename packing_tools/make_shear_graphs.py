@@ -4,11 +4,12 @@ Created on Wed Dec 12 11:42:13 2012
 
 @author: Merlijn van Deen
 """
-import sys
-import os
-sys.path.append(os.path.split(__file__)[0] + "/../hdf_tools")
+import sys, os
+sys.path.append(os.path.split(__file__)[0])
+sys.path.append(os.path.join(os.path.split(__file__)[0], "..", "hdf_tools"))
 
 import pylab
+from pylab import *
 import pandas
 import load_log, load_packing
 from load_packing import loadPackingData
@@ -76,18 +77,18 @@ def plotunitcell(pack, **kwargs):
     
     plot(*zip(*steps), **kwargs)
 
-def plotparticle(pack, i, **kwargs):
+def plotparticle(pack, i, offset=(0,0), **kwargs):
     if 'fc' not in kwargs:
         kwargs['fc'] = "none"
 
     part = pack['particles'][i]
     
-    circ=pylab.Circle((part['x'], part['y']), radius=part['r'], **kwargs)
+    circ=pylab.Circle((part['x'] + offset[0], part['y'] + offset[1]), radius=part['r'], **kwargs)
     ax=gca()
     ax.add_patch(circ)
 
 startnumconts = None
-def plotparticles(pack, **kwargs):
+def plotparticles(pack, offset=(0,0), **kwargs):
     global startnumconts
 
     conts = get_contacts(pack)
@@ -97,14 +98,14 @@ def plotparticles(pack, **kwargs):
         startnumconts = numconts
         
     for i in range(len(pack['particles'])):
-        if True:
+        if False:
             if numconts[i] < startnumconts[i]:
                 kwargs['fc'] = 'red'
             elif numconts[i] > startnumconts[i]:
                 kwargs['fc'] = 'blue'
             else:
                 kwargs['fc'] = 'none'
-        else:
+        elif False:
             rg = 1e-3
             dx = (pack['particles'][i]['x'] - startpack['particles'][i]['x']) - \
                  (((pack["L2"][0] - startpack["L2"][0])/startpack["L2"][1]) * startpack['particles'][i]["y"])
@@ -115,19 +116,39 @@ def plotparticles(pack, **kwargs):
                 dx = rg - 1e-30
             
             kwargs['fc'] = cm.spectral((dx+rg)/(2*rg))
-        plotparticle(pack, i, **kwargs)
+        plotparticle(pack, i, offset=offset, **kwargs)
+
+def plotcontacts(pack, offset=(0,0), **kwargs):
+    if 'color' not in kwargs:
+        kwargs['color'] = 'black'
+    conts = get_contacts(pack)
+    Nparts = conts['dij'].shape[0]
+    xij, yij = conts['xij'], conts['yij']
+    
+    for row in range(Nparts):
+        for col in range(row):
+            dij = conts['dij'][row, col] 
+            if dij > 0:
+                part = pack['particles'][col]
+                x,y = part['x'], part['y']
+                dx, dy = xij[row, col], yij[row, col]
+                plot([x+offset[0], x+dx+offset[0]], [y+offset[1], y+dy+offset[1]], **kwargs)
+                
+                
 
 def doPackingStuff(pack):
+    figure()
+    subplot(111, aspect= 'equal')
     plotunitcell(pack)
     plotparticles(pack)
 
-#base_path = r"D:\h5\N2048-large-shear" + "\\"
-#name = "N2048~P1e-6~SR050~step101~9004"
-#name = "N2048~P1e-2~SS0e-2~step2000~9004"
-#data, comment = read_log(name)
-
-#indices = [0] + [x[1] for x in determine_all_cs_indices(data)]
-
+    plotcontacts(pack)
+    for offset_num in [(-1,0), (0,-1), (-1,1), (1,-1), (-1,-1), (1,0), (0,1), (1,1)]:
+        realoffset = (pack["L1"] * offset_num[0] + pack["L2"] * offset_num[1])
+        plotparticles(pack, realoffset, color="gray")
+        plotcontacts(pack, realoffset, color="gray")
+    
+    scalefig(pack, extent=0.3)
 
 #ioff()
 #startpack = None
