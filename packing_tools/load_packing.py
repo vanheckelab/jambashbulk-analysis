@@ -43,7 +43,7 @@ def loadPackings(filename):
         time.sleep(30)
         f = open(filename)
         
-    raw = f.read().strip()
+    raw = f.read().strip().lstrip('\x00')
     f.close()
     
     packings = raw.split("\n\n")
