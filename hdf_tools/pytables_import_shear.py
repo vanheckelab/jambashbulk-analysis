@@ -98,8 +98,19 @@ def process_measurement(f, key, base, m, spec):
     if 'eta' in data and 'gamma' not in data:
         data['gamma'] = data['eta']
         data.pop('eta')
-        
-    data["gamma"][log["step#"] == 0] = 0 # work around gamma=10^-9 bug
+    
+    # and then to gamma_alpha, but we will keep gamma as name here....
+    if 'gamma_alpha' in data and 'gamma' not in data:
+        data['gamma'] = data['gamma_alpha']
+        data.pop('gamma_alpha')
+    
+    # gamma=10^-9 is actually gamma=0; fix this
+    data["gamma"][log["step#"] == 0] = 0
+    
+    # and I think there is also some bug with very low gamma (10^-16-ish) but I
+    # have no clue what the exact problem was (or the fix)
+    # (probably the first strain is not 0 there. Or something.)
+    # :-( - Merlijn 4/2/13
     
     group._v_attrs['comments'] = comments
 
