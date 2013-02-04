@@ -16,7 +16,11 @@ import glob
 
 import numpy as np
 from numpy import float64, array
-
+try:
+    from numpy import float128 as bigfloat
+except Exception:
+    from numpy import float96 as bigfloat
+    
 from packing_tools.load_packing import getPackings 
  
 import tables
@@ -34,10 +38,10 @@ def create_group_for_packing(root, packing):
     return pkgroup
 
 def insert_attribute(node, key, value):
-    if getattr(value, 'dtype', type(value)) == np.float128:
+    if getattr(value, 'dtype', type(value)) == bigfloat:
         #long double. split in two entries
         major = np.float64(value)
-        minor = np.float64(value - np.float128(major))
+        minor = np.float64(value - bigfloat(major))
         insert_attribute(node, key, major)
         insert_attribute(node, key+"_err", minor)
         return

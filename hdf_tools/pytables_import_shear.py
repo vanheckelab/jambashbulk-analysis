@@ -121,7 +121,6 @@ def process_measurement(f, key, base, m, spec):
         open(os.path.join(base, "particles" + spec)).close()
         particles = loadPackings(os.path.join(base, "particles" + spec))
 
-        particles = [particles[0]] + particles[1::2]
         if len(particles) > len(data):
             particles = [particles[0]] + particles[1::2]
         particles = pandas.DataFrame(particles)
@@ -147,8 +146,6 @@ def process_measurement(f, key, base, m, spec):
             insert_packing_particles(subgroup, row)
     
     attrcache.flush()
-    f.flush()
-        
 
 def key_for_fn(fn):
   part1 = os.path.split(os.path.split(fn)[0])[1].split("~") 
