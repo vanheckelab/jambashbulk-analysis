@@ -6,6 +6,7 @@ Created on Wed Jun 13 13:33:29 2012
 """
 
 import os, sys
+sys.path.append(os.path.split(os.path.split(__file__)[0])[0])
 import time
 import glob
 import itertools
@@ -105,7 +106,8 @@ def process_measurement(f, key, base, m, spec):
         data.pop('gamma_alpha')
     
     # gamma=10^-9 is actually gamma=0; fix this
-    data["gamma"][log["step#"] == 0] = 0
+    if any(log["step#"] == 0):
+        data["gamma"][log["step#"] == 0] = 0
     
     # and I think there is also some bug with very low gamma (10^-16-ish) but I
     # have no clue what the exact problem was (or the fix)
@@ -127,6 +129,7 @@ def process_measurement(f, key, base, m, spec):
 
         print len(particles)
         print len(data)
+        #import pdb; pdb.set_trace()
         packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
         print len(packings)
     except IOError, e:
