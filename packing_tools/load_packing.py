@@ -56,6 +56,41 @@ def loadPacking(filename):
     assert(len(data) == 1)
     return data[0]
 
+def savePacking(packing, filename, mode='w'):
+    f = open(filename, mode)
+    f.write(strPacking(packing))
+    f.close()
+
+def strPacking(packing):
+    ret = []
+    ret.append("N = {N} ,L = {L:.16f} ,L1= {{ {L1[0]:.16f} , {L1[1]:.16f} }}  ,L2= {{ {L2[0]:.16f} , {L1[0]:.16f} }}  ,P = {P:.16f} ,P0= {P0:.16f} ,".format(**packing))
+    ret.append("{")
+    for x, dx, y, dy, r in packing["particles"]:
+        ret.append("{x:.16f} ,\t{y:.16f} ,\t{r:.16f} ,\t".format(x=x+dx, y=y+dy, r=r))
+    ret.append("}")
+    ret.append("")
+    ret.append("")
+    return "\n".join(ret)
+
+def mirror(packing, x=True, y=False):
+    if y:
+        raise Exception('not implemented')
+
+    import copy
+    packing = copy.deepcopy(packing)
+    
+    if x:
+        # flip alpha
+        packing['L2'][0] = -packing['L2'][0]   
+        
+        # flip X values
+        packing['particles']['x'] = -packing['particles']['x']
+        packing['particles']['x_err'] = -packing['particles']['x_err']
+
+        # shift particles back into unit cell
+        packing['particles']['x'] += packing['L1'][0]
+
+    return packing
 def read_xconf(filename):
     """Load Packing from the ancient XConf format"""
     f = open(filename)
