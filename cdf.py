@@ -24,6 +24,10 @@ def densplot(data, range_, *args, **kwargs):
     plot(xs, density(xs), *args, **kwargs)
     
 def plot_cdf(data, *args, **kwargs):
+    x,y = get_cdf_data(data)    
+    return plot(x,y, *args, **kwargs)
+
+def get_cdf_data(data):
     if data.size == 0:
         return
     length = len(data)
@@ -34,9 +38,9 @@ def plot_cdf(data, *args, **kwargs):
     
     y = [0] + sorted(range(length) + range(length))[1:] + [length, length]
     y = float16(y)/length
-    
-    plot(x,y, *args, **kwargs)
-    
+
+    return x, y    
+   
 def plot_icdf(data, *args, **kwargs):
     if data.size == 0:
         return
@@ -49,4 +53,4 @@ def plot_icdf(data, *args, **kwargs):
     y = [0] + sorted(range(length) + range(length))[1:] + [length, length]
     y = float16(y)/length
     
-    plot(x,1-y, *args, **kwargs)
+    return plot(x,1-y, *args, **kwargs)
