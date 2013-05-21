@@ -119,38 +119,68 @@ def process_measurement(f, key, base, m, spec):
     group._v_attrs['comments'] = comments
 
     if insert_particles:
-        print "particles",
-        sys.stdout.flush()
-        
         try:
-            open(os.path.join(base, "particles" + spec)).close()
-            particles = loadPackings(os.path.join(base, "particles" + spec))
+            if os.path.exists(os.path.join(base, "particles" + spec)):
+                print "particles",
+                sys.stdout.flush()
+                # new format, where we know the particle positions for every step
+                particles = loadPackings(os.path.join(base, "particles" + spec))
+    
+                if len(particles) > len(data):
+                    particles = [particles[0]] + particles[1::2]
+                particles = pandas.DataFrame(particles)
 
-            if len(particles) > len(data):
-                particles = [particles[0]] + particles[1::2]
-            particles = pandas.DataFrame(particles)
+    
+                print len(particles)
+                print len(data)
+                #import pdb; pdb.set_trace()
+                packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
+                print len(packings)
+            elif os.path.exists(os.path.join(base, spec)):
+                print "oldparticles",
+                sys.stdout.flush()
 
-            print len(particles)
-            print len(data)
-            #import pdb; pdb.set_trace()
-            packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
-            print len(packings)
+                # old format where we only know some particle positions
+                packings = data.join(log, rsuffix="__")
+                
+                particles = loadPackings(os.path.join(base, spec))
+                particles = pandas.DataFrame(particles)
+                
+                # create comparison columns: change in L2[0]
+                particles["dL20"] = (array([x[0] for x  in particles["L2"]]) - particles["L2"][0][0])
+                packings["dL20"] = packings["gamma"] * packings["L"]
+                
+                # from this, we can determine the correct step#s
+                particles["step#"] = array(packings["step#"][argmin(abs(packings["dL20"][:, np.newaxis] - array(particles["dL20"])), axis=0)])
+                packings = packings.merge(particles, how="left", left_on="step#", right_on="step#", suffixes=("", "_"))
+            else:
+                print "noparticles"
         except IOError, e:
+            raise
             print "(failed: %r)" % e
             sys.stdout.flush()
+            
+                        
+            
             packings = data.join(log, rsuffix="__")
+            
     else:
         packings = data.join(log, rsuffix="__")
 
     attrcache = require_table(group, 'data', packing_attr_cache_dtype,
                               expectedrows=len(log), chunkshape=(len(log),))
     for rowno, row in packings.iterrows():
+        if "%04i" % row["step#"] in group._v_children.keys():
+            continue
+        
         subgroup = require_group(group, "%04i" % row["step#"])
         
         insert_packing_parameters(subgroup, row)
         add_to_table(attrcache, row, path=subgroup._v_pathname)
         
-        if 'particles' in packings and insert_particles:
+        if insert_particles and \
+           'particles' in packings and \
+            not (isinstance(row['particles'], float) and isnan(row['particles'])):
             insert_packing_particles(subgroup, row)
     
     attrcache.flush()
@@ -161,14 +191,19 @@ def key_for_fn(fn):
   return list(part1) + list(part2)
 
 if __name__ == "__main__":
+    try:
+        sys.argv = argv
+    except NameError:
+        pass
+
     if '-noparticles' in sys.argv:
         sys.argv.remove('-noparticles')
         insert_particles = False
 
     if len(sys.argv) != 3:
         print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in> [-noparticles]"
-        exit(1)
-    
+        raise Exception()
+        
     bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
     outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
     
