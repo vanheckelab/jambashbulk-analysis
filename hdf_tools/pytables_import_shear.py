@@ -52,6 +52,8 @@ packing_attr_cache_dtype = np.dtype([
 ('creation-date', dtype('|S19')),
 ('path', '|S128')])
 
+insert_particles = True
+
 def shear_type(st):
     if st.startswith("SR"):
         return "SR"
@@ -116,25 +118,28 @@ def process_measurement(f, key, base, m, spec):
     
     group._v_attrs['comments'] = comments
 
-    print "particles",
-    sys.stdout.flush()
-    
-    try:
-        open(os.path.join(base, "particles" + spec)).close()
-        particles = loadPackings(os.path.join(base, "particles" + spec))
-
-        if len(particles) > len(data):
-            particles = [particles[0]] + particles[1::2]
-        particles = pandas.DataFrame(particles)
-
-        print len(particles)
-        print len(data)
-        #import pdb; pdb.set_trace()
-        packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
-        print len(packings)
-    except IOError, e:
-        print "(failed: %r)" % e
+    if insert_particles:
+        print "particles",
         sys.stdout.flush()
+        
+        try:
+            open(os.path.join(base, "particles" + spec)).close()
+            particles = loadPackings(os.path.join(base, "particles" + spec))
+
+            if len(particles) > len(data):
+                particles = [particles[0]] + particles[1::2]
+            particles = pandas.DataFrame(particles)
+
+            print len(particles)
+            print len(data)
+            #import pdb; pdb.set_trace()
+            packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
+            print len(packings)
+        except IOError, e:
+            print "(failed: %r)" % e
+            sys.stdout.flush()
+            packings = data.join(log, rsuffix="__")
+    else:
         packings = data.join(log, rsuffix="__")
 
     attrcache = require_table(group, 'data', packing_attr_cache_dtype,
@@ -145,7 +150,7 @@ def process_measurement(f, key, base, m, spec):
         insert_packing_parameters(subgroup, row)
         add_to_table(attrcache, row, path=subgroup._v_pathname)
         
-        if 'particles' in packings:
+        if 'particles' in packings and insert_particles:
             insert_packing_particles(subgroup, row)
     
     attrcache.flush()
@@ -156,8 +161,12 @@ def key_for_fn(fn):
   return list(part1) + list(part2)
 
 if __name__ == "__main__":
+    if '-noparticles' in sys.argv:
+        sys.argv.remove('-noparticles')
+        insert_particles = False
+
     if len(sys.argv) != 3:
-        print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in>"
+        print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in> [-noparticles]"
         exit(1)
     
     bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
