@@ -264,6 +264,8 @@ def Hess(conts,packing):
 
 # LinDef : returns the energy difference for a given strain (a,b,d) = ((a,d),(d,b)).
 # It works also for a series of strains (save the diagonalization calculation time).
+class PackingException(Exception):
+    pass
 
 def LinDef(K,rat,strain,packing):
     dU=np.array([])
@@ -278,7 +280,7 @@ def LinDef(K,rat,strain,packing):
     L = sqrt(lxx * lyy)
     
     if sz[1]!=3 :
-            sys.exit("wrong strain input")
+        raise Exception("wrong strain input")
     
     N = packing['particles'].shape[0]
     Nr= N-rat.size
@@ -290,9 +292,9 @@ def LinDef(K,rat,strain,packing):
     sK=K.shape[0]
 
     K0=K[0:sK-4,0:sK-4]
-    
+    if K0.shape == (0,0):
+        raise PackingException("All particles are rattlers!")
     [lam,V]=LA.eigh(K0)
-    
    
     for line in strain:
         Str_Ts=np.array([line[0],line[2],line[2],line[1]]).reshape(2,2)
