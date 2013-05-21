@@ -1,0 +1,68 @@
+from ctypes import *
+import numpy as np
+from numpy import float64, float128, array
+
+cparser = CDLL("./_parser.so")
+libc = cdll.LoadLibrary("libc.so.6")
+
+fopen = libc.fopen
+fclose = libc.fclose
+
+libc.strerror.restype = c_char_p
+
+class Header(Structure):
+    _fields_ = [("N", c_int),
+                ("L", c_longdouble),
+                ("L1x", c_longdouble),
+                ("L1y", c_longdouble),
+                ("L2x", c_longdouble),
+                ("L2y", c_longdouble),
+                ("P", c_longdouble),
+                ("P0", c_longdouble)
+               ]
+
+    def __repr__(self):
+        jetzers = []
+        for f,c in self._fields_:
+            jetzers.append("%s=%s" % (f, getattr(self, f)))
+        return "; ".join(jetzers)
+
+def create_packing(H, particles):
+    x = particles[:,0]
+    y = particles[:,1]
+    r = particles[:,2]
+
+    x_major = float64(x); x_minor = float64(x-float128(x_major))
+    y_major = float64(y); y_minor = float64(y-float128(y_major))
+    r = float64(r)
+
+    particles = array(zip(x_major, x_minor, y_major, y_minor, r), dtype=[('x', float64), ('x_err', float64),
+                                                                         ('y', float64), ('y_err', float64),
+                                                                         ('r', float64)])
+
+    return {'P0': H.P0,
+     'L': H.L,
+     'N': H.N,
+     'L1': array([H.L1x, H.L1y]),
+     'L2': array([H.L2x, H.L2y]),
+     'P': H.P,
+     'P0': H.P0,
+     'particles': particles}
+
+def read_packings(fn):
+    fptr = fopen(fn, "r")
+    if not fptr:
+        errno = c_int.in_dll(libc, "errno").value
+        raise IOError(errno, libc.strerror(errno))
+
+    try:
+        h = Header()
+        while(cparser.read_header(fptr, byref(h)) == 8):
+            particles = np.zeros([h.N, 3], dtype=np.longdouble)
+            cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
+            yield create_packing(h, particles)
+    finally:
+        fclose(fptr)
+
+if __name__ == "__main__":
+    it = read_packings('N32~P1e-3~9000.txt')
