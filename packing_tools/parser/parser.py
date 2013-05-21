@@ -1,8 +1,9 @@
 from ctypes import *
 import numpy as np
 from numpy import float64, float128, array
+import os
 
-cparser = CDLL("./_parser.so")
+cparser = CDLL(os.path.join(os.path.split(__file__)[0], "_parser.so"))
 libc = cdll.LoadLibrary("libc.so.6")
 
 fopen = libc.fopen
