@@ -43,11 +43,12 @@ class HessianPackingCalculator(object):
         # K⁻¹ = Q Λ⁻¹ Q⁻¹, but we have λ=0 eigenvalues (global translations, zero energy
         # cost. We want these DOF to stay constant under stress, so we set λ⁻¹ = 0 for
         # them.
-        eigenvalues_inv = 1/self.eigenvalues
-        eigenvalues_inv[:2] = 0
+        self.eigenvalues_inv = 1/self.eigenvalues
+        self.eigenvalues_inv[:2] = 0
         
-        Lambda_inv = diag(eigenvalues_inv)
-        self.K0_inv = dot(self.Q, dot(Lambda_inv, self.Q.T))
+		# this is *slow* on opterons. For some reason. Or maybe it's the memory. Whatever.
+        #Lambda_inv = diag(eigenvalues_inv)
+        #self.K0_inv = dot(self.Q, dot(Lambda_inv, self.Q.T))
         
         # Where Q = [v1, v2, v3, v4, ...] (stacked column vectors)
         # and Q⁻¹ = Q.T
@@ -80,7 +81,8 @@ class HessianPackingCalculator(object):
         # of the particles that will result in -forces_ext.
         forces_particles = forces_ext[:-4]
         
-        movement_particles = dot(self.K0_inv, -forces_particles) # note the -
+        #movement_particles = dot(self.K0_inv, -forces_particles) # note the -
+		movement_particles = self.Q.dot(self.Q.T.dot(-forces_particles) * self.eigenvalues_inv)
         
         delta_x = movement_particles[:len(movement_particles)/2]
         delta_y = movement_particles[len(movement_particles)/2:]

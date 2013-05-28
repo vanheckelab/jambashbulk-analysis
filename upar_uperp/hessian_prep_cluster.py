@@ -46,13 +46,13 @@ def worker((fn, num)):
     
         HPC = HessianPackingCalculator(group)
         
-        for deformation in [2,3]:
-            u_parr, u_parr_scaled, u_perp, u_perp_scaled = HPC.get_scaled_uparperps(deformation=2)
+        u_parr, u_parr_scaled, u_perp, u_perp_scaled = HPC.get_scaled_uparperps(deformation=2)
+        dij = HPC.contacts['dij']
         
-            np.savez(npfn + str(deformation) + ".npz",
-                     u_parr = u_parr, u_parr_scaled = u_parr_scaled,
-                     u_perp = u_perp, u_perp_scaled = u_perp_scaled,
-                     rij = HPC.contacts['rij'], dij = HPC.contacts['dij'])
+        np.savez(npfn + str(deformation) + ".npz",
+                 u_parr = u_parr[~isnan(u_parr)], #u_parr_scaled = u_parr_scaled,
+                 u_perp = u_perp[~isnan(u_perp)], #u_perp_scaled = u_perp_scaled,
+                 dij = dij[~isnan(dij)])
                     
         print "done, runtime: ", time.time()-start
     except Exception, e:
