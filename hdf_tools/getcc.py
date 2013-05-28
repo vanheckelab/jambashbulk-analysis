@@ -5,9 +5,9 @@ Created on Mon May 06 12:06:04 2013
 Tool to get contact changes from an hdf group
 """
 import time
-from numpy import min, max, sum, diff, log10, abs, amin, amax
+from numpy import min, max, sum, diff, log10, abs, amin, amax, where
 
-def get_first_cc(group):
+def get_first_ccs_base(group):
     try:
         data = group.SR.data.read()
     except Exception, e:
@@ -38,9 +38,26 @@ def get_first_cc(group):
     except Exception, e:
         if abs(diff(log10(abs(diff(log10(data["gamma"])))))[-1] + log10(2)) > 1e-6:
             print group._v_pathname, e, diff(log10(abs(diff(log10(data["gamma"]))))), "(38)"
-        subdata = data[:]    
+        subdata = data[:]  
+        
+    return locals()
     
-    before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])][0]
-    after  = subdata[subdata["gamma"] == amin(subdata[subdata["Nchanges"] > 0]["gamma"])][0]
+def get_first_cc(group):
+    exec ""
+    locals().update(get_first_ccs_base(group))
+    
+    before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
+    print len(before); before=before[0];
+    after  = subdata[subdata["gamma"] == amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
+    print len(after); after=after[0];
+
+    return before, after  
+    
+def get_first_ccs(group):
+    exec ""
+    locals().update(get_first_ccs_base(group))
+    subdata.sort(order=["gamma"])
+    before = subdata[subdata["gamma"] <= amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
+    after  = subdata[subdata["gamma"] >= amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
 
     return before, after   
