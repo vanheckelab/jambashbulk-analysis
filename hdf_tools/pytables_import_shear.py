@@ -215,7 +215,7 @@ if __name__ == "__main__":
     try:
         shear_measurements = [(key_for_fn(fn), fn)
                                 for fn
-                                in glob.glob(bbase + "*/data*.txt")]
+                                in sorted(glob.glob(bbase + "*/data*.txt"))]
         for key, measurements in itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey):
             for m in measurements:
                 pass
