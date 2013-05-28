@@ -12,7 +12,7 @@ import glob
 import itertools
 import pandas
 import numpy as np
-from numpy import float64, array, dtype
+from numpy import float64, array, dtype, argmin, isnan
 
 from packing_tools.load_packing import loadPackings 
  
@@ -170,16 +170,18 @@ def process_measurement(f, key, base, m, spec):
     attrcache = require_table(group, 'data', packing_attr_cache_dtype,
                               expectedrows=len(log), chunkshape=(len(log),))
     for rowno, row in packings.iterrows():
-        if "%04i" % row["step#"] in group._v_children.keys():
-            continue
-        
-        subgroup = require_group(group, "%04i" % row["step#"])
-        
-        insert_packing_parameters(subgroup, row)
-        add_to_table(attrcache, row, path=subgroup._v_pathname)
-        
+        name = "%04i" % row["step#"]
+        if name not in group._v_children.keys():
+            subgroup = require_group(group, name)
+            
+            insert_packing_parameters(subgroup, row)
+            add_to_table(attrcache, row, path=subgroup._v_pathname)
+        else:
+            subgroup = getattr(group, name)
+            
         if insert_particles and \
            'particles' in packings and \
+           'particles' not in subgroup and \
             not (isinstance(row['particles'], float) and isnan(row['particles'])):
             insert_packing_particles(subgroup, row)
     
