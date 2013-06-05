@@ -45,3 +45,8 @@ def add_to_table(table, data={}, **kwargs):
                 row[key] = numpy.array(0, dtype=table.coldtypes[key]) * numpy.nan
             
     row.append()
+
+def read_packing(pack):
+    packing = dict((x, pack._v_attrs[x]) for x in pack._v_attrs._v_attrnames)
+    packing['particles'] = pack.particles.read()
+    return packing
