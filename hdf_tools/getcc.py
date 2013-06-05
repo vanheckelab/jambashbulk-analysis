@@ -47,9 +47,9 @@ def get_first_cc(group):
     locals().update(get_first_ccs_base(group))
     
     before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
-    print len(before); before=before[0];
+    before=before[0];
     after  = subdata[subdata["gamma"] == amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
-    print len(after); after=after[0];
+    after=after[0];
 
     return before, after  
     
