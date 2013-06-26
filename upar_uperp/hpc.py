@@ -82,7 +82,7 @@ class HessianPackingCalculator(object):
         forces_particles = forces_ext[:-4]
         
         #movement_particles = dot(self.K0_inv, -forces_particles) # note the -
-		movement_particles = self.Q.dot(self.Q.T.dot(-forces_particles) * self.eigenvalues_inv)
+        movement_particles = self.Q.dot(self.Q.T.dot(-forces_particles) * self.eigenvalues_inv)
         
         delta_x = movement_particles[:len(movement_particles)/2]
         delta_y = movement_particles[len(movement_particles)/2:]
@@ -170,9 +170,9 @@ class HessianPackingCalculator(object):
 
         return u_parr, u_perp
         
-    def get_scaled_uparperps(self):
+    def get_scaled_uparperps(self, deformation=1):
         assert(self.loaded)
-        u_parr, u_perp = self.get_uparrs()
+        u_parr, u_perp = self.get_uparrs(deformation=deformation)
 
         delta_ij_ellenbroek = 1 / (1 + self.contacts['rij'] / self.contacts['dij'])
         

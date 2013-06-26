@@ -59,9 +59,16 @@ def read_packings(fn):
     try:
         h = Header()
         while(cparser.read_header(fptr, byref(h)) == 8):
+            print ".",
+            import sys; sys.stdout.flush()
             particles = np.zeros([h.N, 3], dtype=np.longdouble)
-            cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
-            yield create_packing(h, particles)
+            retval = cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
+            if retval == 0:
+                yield create_packing(h, particles)
+            elif retval == c_int.in_dll(cparser, "_eof").value:
+                raise EOFError()
+            else:
+                raise Exception("Unknown error in read_particles; return value was %i" % retval)
     finally:
         fclose(fptr)
 

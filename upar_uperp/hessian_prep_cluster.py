@@ -35,7 +35,7 @@ def worker((fn, num)):
             group = itr.next()
     
         start = time.time()
-        npfn = path + os.path.split(fn)[1].split(".")[0] + "~" + group._v_name + "~part_u_s"
+        npfn = path + os.path.split(fn)[1].split(".")[0].split("~")[0] + "_output/" + os.path.split(fn)[1].split(".")[0] + "~" + group._v_name + "~part_u_s"
         print group._v_pathname, "; ", npfn, start
         sys.stdout.flush()
         
@@ -43,16 +43,19 @@ def worker((fn, num)):
         if group._v_pathname in ["/N512/p1.0000e-06/9050"]:
             print "<SKIP DUE TO ERROR>"
             return
-    
+        print "starting HPC"
+        sys.stdout.flush()
         HPC = HessianPackingCalculator(group)
+        print "calc defor"
+        sys.stdout.flush()
         
         u_parr, u_parr_scaled, u_perp, u_perp_scaled = HPC.get_scaled_uparperps(deformation=2)
         dij = HPC.contacts['dij']
         
-        np.savez(npfn + str(deformation) + ".npz",
-                 u_parr = u_parr[~isnan(u_parr)], #u_parr_scaled = u_parr_scaled,
-                 u_perp = u_perp[~isnan(u_perp)], #u_perp_scaled = u_perp_scaled,
-                 dij = dij[~isnan(dij)])
+        np.savez(npfn + ".npz",
+                 u_parr = u_parr[~np.isnan(u_parr)], #u_parr_scaled = u_parr_scaled,
+                 u_perp = u_perp[~np.isnan(u_perp)], #u_perp_scaled = u_perp_scaled,
+                 dij = dij[dij>0])
                     
         print "done, runtime: ", time.time()-start
     except Exception, e:
@@ -66,6 +69,7 @@ if __name__ == "__main__":
     for base in sys.argv[1:]:
         print "PROCESSING BASE " + path + base + "_tables/*.h5"
         paths += glob.glob(path + base + "_tables/*.h5")
+    #paths = ["/clusterdata/merlijn/h5/N1024_tables/N1024~P1e-3.h5"]
     print paths
     #if len(sys.argv) > 2:
     #    filt = sys.argv[2]
@@ -77,13 +81,14 @@ if __name__ == "__main__":
             f = tables.File(fn)
             groups = iter(iter(iter(f).next()).next()).next()
             groupnums = [i for i,g in enumerate(groups)]
-            
+            groupnums = groupnums
             print "Processing ", fn, "; groups ", min(groupnums), "...", max(groupnums)
+           
             tasks.extend([(fn, num) for num in groupnums])
             f.close()
         except Exception, e:
             print fn, e
-
+    
     import multiprocessing   
     print "Starting %i processes to process %i tasks" % (multiprocessing.cpu_count()-1, len(tasks))
     p = multiprocessing.Pool(processes=multiprocessing.cpu_count()-1)

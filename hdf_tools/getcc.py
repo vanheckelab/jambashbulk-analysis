@@ -6,19 +6,19 @@ Tool to get contact changes from an hdf group
 """
 import time
 from numpy import min, max, sum, diff, log10, abs, amin, amax, where
+import sys
 
 def get_first_ccs_base(group):
     try:
         data = group.SR.data.read()
     except Exception, e:
-        print e, " - sleeping to recover?"
+        #print >>sys.stdout, e, " - sleeping to recover?"
         time.sleep(10)
-        print "retrying...."
+        #print >>sys.stdout, "retrying...."
         data = group.SR.data.read()
         
     if sum(diff(data["step#"]) != 1):
-        print group._v_pathname, diff(data["step#"])
-        raise Exception("step ordering")        
+        raise Exception(("step ordering", group._v_pathname, diff(data["step#"])))
     #data.sort(order="step#") # because this sometimes is not the case O_o.
     
     if min(data['Nchanges']) != 0:
@@ -37,7 +37,8 @@ def get_first_ccs_base(group):
         subdata = data[:lastconvergenceid+1]
     except Exception, e:
         if abs(diff(log10(abs(diff(log10(data["gamma"])))))[-1] + log10(2)) > 1e-6:
-            print group._v_pathname, e, diff(log10(abs(diff(log10(data["gamma"]))))), "(38)"
+            #print >>sys.stdout, group._v_pathname, e, diff(log10(abs(diff(log10(data["gamma"]))))), "(38)"
+            pass
         subdata = data[:]  
         
     return locals()

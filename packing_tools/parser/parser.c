@@ -4,6 +4,8 @@
 // N = 32 ,L = 13.3313044692576223 ,L1= { 13.2755191332318470 , 0.0000000000000000 }  ,L2= { 0.1431421467822201 , 13.3873242220082184 }  ,P = 0.0010000000000000 ,P0= 0.0010000000000000 ,
 //
 
+const int _eof = EOF;
+
 struct s_header
 {
     int N;
@@ -37,6 +39,6 @@ int read_header(FILE * source, struct s_header *header)
 
 int read_particles(FILE * source, long double * storage) {
     fscanf(source, " { ");
-    while(fscanf(source, " %Lf ,", storage++));
+    while(fscanf(source, " %Lf ,", storage++) > 0);
     fscanf(source, " } ");
 }

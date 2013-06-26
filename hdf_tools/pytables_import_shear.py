@@ -13,7 +13,7 @@ import itertools
 import pandas
 import numpy as np
 from numpy import float64, array, dtype, argmin, isnan
-
+import re
 from packing_tools.load_packing import loadPackings 
  
 import tables
@@ -67,20 +67,26 @@ def groupkey(args):
 def sortkey(args):
     return list(groupkey(args)) + args[0]
 
+class CSVReadException(Exception):
+    pass
+
 def read_csv(fn):
-    f = open(fn)
-    comments = ""
-    
-    while True:
-        oldpos = f.tell()
-        line = f.readline()
+    try:
+        f = open(fn)
+        comments = ""
         
-        if line.startswith('#'):
-            comments += line
-        else:
-            f.seek(oldpos)
-            break
-    return pandas.read_csv(f, sep="[ \t]"), comments
+        while True:
+            oldpos = f.tell()
+            line = f.readline()
+            
+            if line.startswith('#'):
+                comments += line
+            else:
+                f.seek(oldpos)
+                break
+        return pandas.read_csv(f, sep="[ \t]"), comments
+    except Exception, e:
+        raise CSVReadException(e)
 
 def process_measurement(f, key, base, m, spec):
     group = require_group(f,'/'.join(key))
@@ -95,7 +101,7 @@ def process_measurement(f, key, base, m, spec):
     data, comments = read_csv(os.path.join(base, "data" + spec))
     print "data",
     sys.stdout.flush()
-
+    assert (len(log) == len(data)), "log and data have different lengths"
 
     # 'eta' (applied strain) was renamed to gamma
     if 'eta' in data and 'gamma' not in data:
@@ -115,6 +121,7 @@ def process_measurement(f, key, base, m, spec):
     # have no clue what the exact problem was (or the fix)
     # (probably the first strain is not 0 there. Or something.)
     # :-( - Merlijn 4/2/13
+    # 10^-16 was actually 10^-8, I think. Incorrect 'small gamma' correction where the data for 10^-8 was written with 10^-16 as listed strain
     
     group._v_attrs['comments'] = comments
 
@@ -129,10 +136,8 @@ def process_measurement(f, key, base, m, spec):
                 if len(particles) > len(data):
                     particles = [particles[0]] + particles[1::2]
                 particles = pandas.DataFrame(particles)
-
+                assert (len(data) == len(particles)), "data and particles have different lengths"
     
-                print len(particles)
-                print len(data)
                 #import pdb; pdb.set_trace()
                 packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
                 print len(packings)
@@ -202,12 +207,16 @@ if __name__ == "__main__":
         sys.argv.remove('-noparticles')
         insert_particles = False
 
-    if len(sys.argv) != 3:
-        print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in> [-noparticles]"
+    if len(sys.argv) not in (3,4):
+        print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in> <start id (counter in file)> [-noparticles]"
         raise Exception()
         
     bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
     outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
+    if len(sys.argv) == 4:
+        start = int(sys.argv[3])
+    else:
+        start = 0
     
     f = tables.openFile(outfile, mode = "a")
     root = f.root
@@ -216,16 +225,34 @@ if __name__ == "__main__":
         shear_measurements = [(key_for_fn(fn), fn)
                                 for fn
                                 in sorted(glob.glob(bbase + "*/data*.txt"))]
-        for key, measurements in itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey):
+        for i,(key, measurements) in enumerate(itertools.groupby(sorted(shear_measurements, key=sortkey), groupkey)):
+            print i, 
+            if i < start:
+                continue
             for m in measurements:
                 pass
             print key
             try:
                 print root, key, os.path.split(m[1])[0], m[0]
                 process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
-            except Exception, e:
-                raise
-                print key, e
+            except (ValueError, ), e:
+                if str(e) == "cannot index with vector containing NA / NaN values"  or \
+                   re.match(r"Expecting \d+ columns, got \d+ in row \d+", str(e)):
+                    print key, repr(e)
+                else:
+                    raise
+            except (AssertionError, ), e:
+                if str(e) in ["log and data have different lengths", "data and particles have different lengths"]:
+                    print key, repr(e)
+                else:
+                    raise
+            except (IOError, EOFError, StopIteration, CSVReadException), e:
+                print key, repr(e)
+            except (Exception, ), e:
+                if str(e) in ["Reindexing only valid with uniquely valued Index objects"]:
+                    print key, repr(e)
+                else:
+                    raise
     finally:
         f.flush()
         f.close()
