@@ -34,6 +34,8 @@ class HessianPackingCalculator(object):
         
         # Determine K0 from K_extended: remove the last four DOF = boundary DOF
         self.K0 = self.K_ext[:-4,:-4]
+        if self.K0.size == 0:
+            raise Exception("0x0 matrix after removing rattlers")
         
         # Diagonalize K: K = Q Λ Q⁻¹
         # Λ = diag(eigenvalues)

@@ -7,7 +7,7 @@
 """
 
 from scipy.stats import gaussian_kde
-from numpy import std, float16
+from numpy import std, float_
 from pylab import plot, linspace
 import warnings
 
@@ -37,7 +37,7 @@ def get_cdf_data(data):
     x = [data[0]-maxdatastep] + x + [data[-1]+maxdatastep]
     
     y = [0] + sorted(range(length) + range(length))[1:] + [length, length]
-    y = float16(y)/length
+    y = float_(y)/length
 
     return x, y    
    

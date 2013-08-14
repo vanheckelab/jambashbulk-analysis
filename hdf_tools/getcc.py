@@ -8,14 +8,15 @@ import time
 from numpy import min, max, sum, diff, log10, abs, amin, amax, where
 import sys
 
-def get_first_ccs_base(group):
-    try:
-        data = group.SR.data.read()
-    except Exception, e:
-        #print >>sys.stdout, e, " - sleeping to recover?"
-        time.sleep(10)
-        #print >>sys.stdout, "retrying...."
-        data = group.SR.data.read()
+def get_first_ccs_base(group, data=None):
+    if data is None:
+        try:
+            data = group.SR.data.read()
+        except Exception, e:
+            print e, " - sleeping to recover?"
+            time.sleep(10)
+            print "retrying...."
+            data = group.SR.data.read()
         
     if sum(diff(data["step#"]) != 1):
         raise Exception(("step ordering", group._v_pathname, diff(data["step#"])))
@@ -43,9 +44,10 @@ def get_first_ccs_base(group):
         
     return locals()
     
-def get_first_cc(group):
+def get_first_cc(group, data=None):
+    """Given a HDF group, returns the row (from the data array) just before and just after the CC"""
     exec ""
-    locals().update(get_first_ccs_base(group))
+    locals().update(get_first_ccs_base(group, data))
     
     before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
     before=before[0];
@@ -54,9 +56,9 @@ def get_first_cc(group):
 
     return before, after  
     
-def get_first_ccs(group):
+def get_first_ccs(group, data=None):
     exec ""
-    locals().update(get_first_ccs_base(group))
+    locals().update(get_first_ccs_base(group, data))
     subdata.sort(order=["gamma"])
     before = subdata[subdata["gamma"] <= amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
     after  = subdata[subdata["gamma"] >= amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
