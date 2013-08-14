@@ -34,6 +34,8 @@ class HessianPackingCalculator(object):
         
         # Determine K0 from K_extended: remove the last four DOF = boundary DOF
         self.K0 = self.K_ext[:-4,:-4]
+        if self.K0.size == 0:
+            raise Exception("0x0 matrix after removing rattlers")
         
         # Diagonalize K: K = Q Λ Q⁻¹
         # Λ = diag(eigenvalues)
@@ -82,7 +84,7 @@ class HessianPackingCalculator(object):
         forces_particles = forces_ext[:-4]
         
         #movement_particles = dot(self.K0_inv, -forces_particles) # note the -
-		movement_particles = self.Q.dot(self.Q.T.dot(-forces_particles) * self.eigenvalues_inv)
+        movement_particles = self.Q.dot(self.Q.T.dot(-forces_particles) * self.eigenvalues_inv)
         
         delta_x = movement_particles[:len(movement_particles)/2]
         delta_y = movement_particles[len(movement_particles)/2:]
