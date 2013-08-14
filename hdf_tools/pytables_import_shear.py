@@ -232,6 +232,16 @@ if __name__ == "__main__":
             for m in measurements:
                 pass
             print key
+
+            ignores = {"N512": {"P3162e-1": [3, 18, 29, 53, 64, 82, 94, 95, 110, 122, 131,
+                                             146, 176, 194, 196],
+                               },
+                       "N32":  {"P1e+0": [9605],},
+                       "N64":  {"P3162e-1": [9105, 9231, 9521, 9827]}}
+
+            if int(key[2]) in ignores.get(key[0], {}).get(key[1], []):
+                print "Skipping (FORCED IGNORE)"
+                continue
             try:
                 print root, key, os.path.split(m[1])[0], m[0]
                 process_measurement(root, key, os.path.split(m[1])[0], m[0], os.path.split(m[1])[1][4:])        
