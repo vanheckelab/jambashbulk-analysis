@@ -15,7 +15,6 @@ import load_log, load_packing
 from load_packing import loadPackingData
 from itertools import izip
 from pytables_import_shear import read_csv
-from generate_cache import determine_cs_indices
 from V_harm import get_contacts
 
 def read_log(name):
@@ -42,15 +41,6 @@ def loadPackings(filename):
             yield data.strip()
             data = ""
         lastline = line
-
-def determine_all_cs_indices(data):
-    num = 0
-    try:
-        while True:
-            yield determine_cs_indices(data, num)
-            num += 1
-    except ValueError:
-        raise StopIteration
 
 def scalefig(pack, extent=0.1):
         xmin = (                min(0, pack['L2'][0]))

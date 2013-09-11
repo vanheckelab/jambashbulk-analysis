@@ -22,7 +22,9 @@ import tables
 import itertools
 import pytables_tools
 
-def get_data_row(packing, packing_base=None):
+def get_data_row(packing, 
+                 
+                 packing_base=None):
     null,N,P,num = packing._v_pathname.split('/')
     num = int(num)
     
@@ -75,7 +77,7 @@ def get_data_row(packing, packing_base=None):
         
     return retval
 
-
+STEPORDERS = []
 def get_data_rows(path = basepath + r'/N*_shear/N*~P*.h5'):
     paths = glob.glob(path)
     print paths
@@ -105,10 +107,21 @@ def get_data_rows(path = basepath + r'/N*_shear/N*~P*.h5'):
           
           for shearpack in sf:
               try:
+                  if shearpack._v_name == '0001':
+                      continue # SKIP packing 1 - because of borked simulations continueing with #1
                   basepack = pf.__getattr__(shearpack._v_name)
               except tables.exceptions.NoSuchNodeError:
                   basepack = None
-              yield get_data_row(shearpack, basepack) 
+              try:
+                  row = get_data_row(shearpack, basepack) 
+              except Exception, e:
+                  if e.args[0][0] == 'step ordering':
+                      print e
+                      STEPORDERS.append(shearpack._v_pathname)
+                      row = None
+                  else:
+                      raise
+              yield row
 
           sff.close()
           pff.close()
