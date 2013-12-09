@@ -57,13 +57,15 @@ def scalefig(pack, extent=0.1):
         
         axis((xmin, xmax, ymin, ymax))
 
-def plotunitcell(pack, **kwargs):
+def plotunitcell(pack, offset=(0,0), **kwargs):
     if 'color' not in kwargs:
         kwargs['color'] = 'gray'
 
     steps = [array([0,0])]
     for d in [pack["L1"], pack["L2"], -pack["L1"], -pack["L2"]]:
         steps.append(steps[-1] + d)
+    steps = array(steps)
+    steps += offset
     
     plot(*zip(*steps), **kwargs)
 
@@ -126,19 +128,27 @@ def plotcontacts(pack, offset=(0,0), **kwargs):
                 
                 
 
-def doPackingStuff(pack):
-    figure()
-    subplot(111, aspect= 'equal')
-    plotunitcell(pack, lw=4, color="blue")
+def doPackingStuff(pack, newfig=True, plot_contacts=True, plot_unitcell=True):
+    if newfig:
+        figure()
+        subplot(111, aspect= 'equal')
+        
+    if plot_unitcell:
+        plotunitcell(pack, lw=4, color="blue")
+        
     plotparticles(pack, lw=3, coloring="contactchange")
-    plotcontacts(pack)
+    
+    if plot_contacts:
+        plotcontacts(pack)
     
     for offset_num in [(-1,0), (0,-1), (-1,1), (1,-1), (-1,-1), (1,0), (0,1), (1,1)]:
         realoffset = (pack["L1"] * offset_num[0] + pack["L2"] * offset_num[1])
         plotparticles(pack, realoffset, ls="dashed", lw=2, coloring="contactchange") # color="red",
-        plotcontacts(pack, realoffset, color="gray")
+        if plot_contacts:
+            plotcontacts(pack, realoffset, color="gray")
     
-    scalefig(pack, extent=0.15)
+    if newfig:
+        scalefig(pack, extent=0.15)
 
 if __name__=="__main__":
     CClast = CC = 0
