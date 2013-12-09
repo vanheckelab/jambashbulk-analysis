@@ -7,7 +7,7 @@
 """
 
 from scipy.stats import gaussian_kde
-from numpy import std, float_
+from numpy import std, array, float_, isfinite
 from pylab import plot, linspace
 import warnings
 
@@ -28,8 +28,11 @@ def plot_cdf(data, *args, **kwargs):
     return plot(x,y, *args, **kwargs)
 
 def get_cdf_data(data):
+    data = array(data)
+    data = data[isfinite(data)]
     if data.size == 0:
         return
+   
     length = len(data)
     maxdatastep = max(data)-min(data) #max(diff(data))
     data = list(data) + list(data)
