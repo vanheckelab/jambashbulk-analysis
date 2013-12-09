@@ -21,7 +21,7 @@ from numpy import float64, array
 try:
     from numpy import float128 as bigfloat
 except Exception:
-    from numpy import float96 as bigfloat
+    from numpy import float64 as bigfloat
     
 from packing_tools.load_packing import getPackings 
  
