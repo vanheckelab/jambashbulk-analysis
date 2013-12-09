@@ -16,11 +16,14 @@ class HessianPackingCalculator(object):
     loaded = False
     def __init__(self, group):
         self.loaded = True
-        self.packing = dict((x, group._v_attrs[x]) for x in group._v_attrs._v_attrnames)
-        self.packing['particles'] = group.particles.read()
+        try:
+            self.packing = dict((x, group._v_attrs[x]) for x in group._v_attrs._v_attrnames)
+            self.packing['particles'] = group.particles.read()
+        except AttributeError:
+            self.packing = group
         
         self.contacts = V_harm.get_contacts(self.packing)
-        self.K_ext = V_harm.Hess(self.contacts, self.packing)
+        self.K_ext = np.float64(V_harm.Hess(self.contacts, self.packing))
         self.rattlers = self.contacts['rattlers']
         
         #V_harm.Pmod(V_harm.El_Con(K_ext,rattlers,packing))

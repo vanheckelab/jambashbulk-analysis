@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from numpy import floor, sqrt, sum, tril, where, diag, array, int8
+from numpy import floor, sqrt, sum, tril, where, diag, array, int_
+
 try:
     from numpy import float128
 except ImportError:
-    print "float96 instead of float128..."
-    from numpy import float96 as float128
+    print "float64 instead of float128..."
+    from numpy import float64 as float128
 
 from numpy import linalg as LA
 
@@ -44,12 +45,12 @@ def get_contacts(packing):
     xij = xj-xi
     yij = yj-yi
     
-    ny = -int8(floor((yij + 0.5 * lyy)/lyy))
+    ny = -int_(floor((yij + 0.5 * lyy)/lyy))
     
     xij += ny * lyx
     yij += ny * lyy
     
-    nx = -int8(floor((xij + 0.5 * lxx)/lxx))
+    nx = -int_(floor((xij + 0.5 * lxx)/lxx))
 
     xij += nx * lxx
     yij += nx * lxy
