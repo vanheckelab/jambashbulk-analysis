@@ -197,24 +197,20 @@ def key_for_fn(fn):
   part2 = os.path.split(fn)[1][4:-4].split("~")[2:]
   return list(part1) + list(part2)
 
-if __name__ == "__main__":
-    try:
-        sys.argv = argv
-    except NameError:
-        pass
-
-    if '-noparticles' in sys.argv:
-        sys.argv.remove('-noparticles')
+def main(argv):
+    global insert_particles
+    if '-noparticles' in argv:
+        argv.remove('-noparticles')
         insert_particles = False
 
-    if len(sys.argv) not in (3,4):
+    if len(argv) not in (2,3):
         print "Usage: %s <base from which to add shear data from> <h5 file to store shear data in> <start id (counter in file)> [-noparticles]"
         raise Exception()
         
-    bbase = sys.argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
-    outfile = sys.argv[2] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
-    if len(sys.argv) == 4:
-        start = int(sys.argv[3])
+    bbase = argv[0] #r"U:\ilorentz\simulations\Packings\N256~P1e-3"
+    outfile = argv[1] #r"U:\ilorentz\simulations\Packings\N256~P1e-3\data.h5"
+    if len(argv) == 3:
+        start = int(argv[2])
     else:
         start = 0
     
@@ -267,6 +263,15 @@ if __name__ == "__main__":
         f.flush()
         f.close()
         print "rrr"
+        
+if __name__ == "__main__":
+    try:
+        sys.argv = argv
+    except NameError:
+        pass
+    main(sys.argv[1:])
+
+
 #try:
 #    for base in glob.glob(bbase + "*"):
 #        for packing in getPackings(base):
