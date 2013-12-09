@@ -97,25 +97,25 @@ packing_attr_cache_dtype = np.dtype([
 ('path', '|S128')])
 
 
-if __name__=="__main__":
-    if len(sys.argv) != 3:
-        print "Usage: %s <glob base> <output hdf file>" % sys.argv[0]
-        sys.exit(1)
+def main(argv):
+    if len(argv) != 2:
+        raise("Usage: %s <glob base> <output hdf file>")
 
-    bbase = sys.argv[1]
-    
-    print os.getcwd()
-    
-    f = tables.openFile(sys.argv[2], mode = "a")
+    bbase = argv[0]
+
+    f = tables.openFile(sys.argv[1], mode = "a")
     root = f.root
-    
+
     attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
     try:
         for base in glob.glob(bbase + "*"):
             for packing in getPackings(base):
-		print packing['N'], packing['P'], packing['PackingNumber']
+                print packing['N'], packing['P'], packing['PackingNumber']
                 path = createpyTablesNodeForPacking(root, packing)
                 add_to_table(attrcache, packing, path=path)
     finally:
         f.flush()
-        f.close()    
+        f.close()
+
+if __name__=="__main__":
+    main(sys.argv[1:])
