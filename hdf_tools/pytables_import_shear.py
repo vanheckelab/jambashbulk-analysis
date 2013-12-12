@@ -70,7 +70,7 @@ def sortkey(args):
 class CSVReadException(Exception):
     pass
 
-def read_csv(fn):
+def read_csv(fn, converters={}):
     try:
         f = open(fn)
         comments = ""
@@ -84,7 +84,7 @@ def read_csv(fn):
             else:
                 f.seek(oldpos)
                 break
-        return pandas.read_csv(f, sep="[ \t]"), comments
+        return pandas.read_csv(f, sep="[ \t]", converters=converters), comments
     except Exception, e:
         raise CSVReadException(e)
 
@@ -94,7 +94,7 @@ def process_measurement(f, key, base, m, spec):
 #    spec = "~".join(m) + ".txt"
     print key, ":", spec,
     
-    log, comments = read_csv(os.path.join(base, "log" + spec))
+    log, comments = read_csv(os.path.join(base, "log" + spec), converters={'P0': np.float64})
     print "log",
     sys.stdout.flush()
     
