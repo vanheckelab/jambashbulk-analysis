@@ -34,7 +34,8 @@ def create_group_for_packing(root, packing):
     
     pkgroup_name = "%04i" % packing['PackingNumber']
     if pkgroup_name in Pgroup:
-        raise Exception("Packing already in hdf5 storage")
+        #raise Exception("Packing already in hdf5 storage")
+        return None
     pkgroup = require_group(Pgroup, pkgroup_name)  
     
     return pkgroup
@@ -64,8 +65,9 @@ def insert_packing(node, packing):
 
 def createpyTablesNodeForPacking(root, packing):
     pkgroup = create_group_for_packing(root, packing)
-    insert_packing(pkgroup, packing)
-    return pkgroup._v_pathname
+    if pkgroup:
+        insert_packing(pkgroup, packing)
+        return pkgroup._v_pathname
 
 
 packing_attr_cache_dtype = np.dtype([
@@ -97,22 +99,24 @@ packing_attr_cache_dtype = np.dtype([
 ('path', '|S128')])
 
 
-def main(argv):
+def main(*argv):
     if len(argv) != 2:
-        raise("Usage: %s <glob base> <output hdf file>")
+        raise Exception("Usage: %s <glob base> <output hdf file>")
 
     bbase = argv[0]
 
-    f = tables.openFile(sys.argv[1], mode = "a")
+    f = tables.openFile(argv[1], mode = "a")
     root = f.root
 
     attrcache = require_table(root, 'packing_attr_cache', packing_attr_cache_dtype)
     try:
         for base in glob.glob(bbase + "*"):
+            print base
             for packing in getPackings(base):
                 print packing['N'], packing['P'], packing['PackingNumber']
                 path = createpyTablesNodeForPacking(root, packing)
-                add_to_table(attrcache, packing, path=path)
+                if path:
+                    add_to_table(attrcache, packing, path=path)
     finally:
         f.flush()
         f.close()
