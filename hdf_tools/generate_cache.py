@@ -79,7 +79,7 @@ def get_data_row(packing,
 
 STEPORDERS = []
 def get_data_rows(path = basepath + r'/N*_shear/N*~P*.h5'):
-    paths = glob.glob(path)
+    paths = sorted(glob.glob(path))
     print paths
     for fn in paths:
           print fn, 
