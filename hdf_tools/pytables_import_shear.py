@@ -197,7 +197,8 @@ def key_for_fn(fn):
   part2 = os.path.split(fn)[1][4:-4].split("~")[2:]
   return list(part1) + list(part2)
 
-def main(argv):
+def main(*argv):
+    argv = list(argv)
     global insert_particles
     if '-noparticles' in argv:
         argv.remove('-noparticles')
@@ -269,7 +270,7 @@ if __name__ == "__main__":
         sys.argv = argv
     except NameError:
         pass
-    main(sys.argv[1:])
+    main(*sys.argv[1:])
 
 
 #try:
