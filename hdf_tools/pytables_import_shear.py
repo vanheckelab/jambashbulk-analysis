@@ -160,13 +160,11 @@ def process_measurement(f, key, base, m, spec):
                 packings = packings.merge(particles, how="left", left_on="step#", right_on="step#", suffixes=("", "_"))
             else:
                 print "noparticles"
+                packings = data.join(log, rsuffix="__")
         except IOError, e:
             raise
             print "(failed: %r)" % e
             sys.stdout.flush()
-            
-                        
-            
             packings = data.join(log, rsuffix="__")
             
     else:

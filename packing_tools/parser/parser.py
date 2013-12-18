@@ -59,7 +59,7 @@ def read_packings(fn):
     try:
         h = Header()
         while(cparser.read_header(fptr, byref(h)) == 8):
-            print ".",
+#            print ".",
             import sys; sys.stdout.flush()
             particles = np.zeros([h.N, 3], dtype=np.longdouble)
             retval = cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
