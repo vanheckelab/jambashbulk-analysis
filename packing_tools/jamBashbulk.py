@@ -5,11 +5,6 @@ import numpy as np
 import ctypes
 from ctypes import Structure, c_int, c_longdouble, cdll, byref
 
-def to_longdouble(value, cutoff=4):
-    import re
-    part1 = value[:cutoff]; part2 = re.sub('[0-9]', '0', part1) + value[cutoff:]
-    return np.longdouble(part1)+np.longdouble(part2)
-
 class PACKINGPARAMS(Structure):
     _fields_ = [('P', c_longdouble),
                 ('phi', c_longdouble),
@@ -33,31 +28,25 @@ __version__ = ctypes.c_char_p.in_dll(dll, "FILE_HEADER_C").value
 c_get_packing_data = dll.get_packing_data
 
 def get_packing_data(N, P0, x, y, r, alpha, delta, L):
-    print type(N), type(P0), type(alpha), type(delta), type(L)
     packingdata = PACKINGPARAMS()
 
-    N = np.int_([N])
-    N_ptr = N.ctypes.data_as(ctypes.POINTER(c_int))
-    P0 = np.longdouble([P0])
-    P0_ptr = P0.ctypes.data_as(ctypes.POINTER(c_longdouble))
+    N = c_int(N)
+    P0 = c_longdouble(P0)
 
-    x = np.longdouble(x.copy())
+    x = np.longdouble(x)
     x_ptr = x.ctypes.data_as(ctypes.POINTER(c_longdouble))
-    y = np.longdouble(y.copy())
+    y = np.longdouble(y)
     y_ptr = y.ctypes.data_as(ctypes.POINTER(c_longdouble))
-    r = np.longdouble(r.copy())
+    r = np.longdouble(r)
     r_ptr = r.ctypes.data_as(ctypes.POINTER(c_longdouble))
 
-    alpha = np.longdouble([alpha])
-    alpha_ptr = alpha.ctypes.data_as(ctypes.POINTER(c_longdouble))
-    delta = np.longdouble([delta])
-    delta_ptr = delta.ctypes.data_as(ctypes.POINTER(c_longdouble))
-    L = np.longdouble([L])
-    L_ptr = L.ctypes.data_as(ctypes.POINTER(c_longdouble))
+    alpha = c_longdouble(alpha)
+    delta = c_longdouble(delta)
+    L = c_longdouble(L)
 
-    c_get_packing_data(N_ptr.contents, P0_ptr.contents,
+    c_get_packing_data(N, P0,
                        x_ptr, y_ptr, r_ptr,
-                       alpha_ptr.contents, delta_ptr.contents, L_ptr.contents,
+                       alpha, delta, L,
                        byref(packingdata))
 
     return dict((field[0], getattr(packingdata, field[0])) for field in packingdata._fields_)
@@ -69,7 +58,43 @@ def convertLvectors(L1, L2):
 
     return {'alpha': alpha, 'delta': delta, 'L': L}
 
-def main():
+def updatePackingParams(packing):
+    x = np.longdouble([row["x"] for row in packing["particles"]]) + np.longdouble([row["x_err"] for row in packing["particles"]])
+    y = np.longdouble([row["y"] for row in packing["particles"]]) + np.longdouble([row["y_err"] for row in packing["particles"]])
+    r = np.longdouble([row["r"] for row in packing["particles"]])
+
+    pd = get_packing_data(
+        packing["N"],
+        packing["P0"],
+        x, y, r,
+        **convertLvectors(packing["L1"], packing["L2"]))
+    # {'phi': 0.8011895053312124,
+    #   'Ncorrected': 21,
+    #   'gg': 1.818953279284722e-15,
+    #   'P': 0.00010000000000000351,
+    #   'U': 1.4889779929429936e-06,
+    #   'H': 0.012376671564328283,
+    #   'sxx': -0.00010000000000007477,
+    #   'sxy': 5.570205614118088e-18,
+    #   'syy': -9.999999999993227e-05,
+    #   'Z': 4.095238095238095
+    #}
+    packing.update(pd)
+    packing.update(convertLvectors(packing["L1"], packing["L2"]))
+    packing["N - Ncorrected"] = packing["N"] - packing["Ncorrected"]
+    packing["runtime (s)"] = np.nan
+    packing["current time"] = 'unknown'
+    packing["FIRE iteration count"] = -1
+    packing["CG iteration count"] = -1
+    packing["dH"] = np.nan
+    packing["dU"] = np.nan
+    packing["maxGrad"] = packing["gg"]
+    packing["Uhelper"] = packing["U"]
+    packing["Z_calc"] = packing["Z"]
+
+    return packing
+
+if __name__ == '__main__':
     N = 16
     P0 = 0.001
     data = [
@@ -90,19 +115,13 @@ def main():
     3.2124952245017365 ,    6.3164065410892209 ,    1.3999999999999999 ,
     4.0087550307426671 ,    1.0510396876630096 ,    1.3999999999999999 ,
     ]
-    np.set_printoptions(precision=1)
-    for lastdigits in ["75", "76", "77", "78", "79", "80", "81"]:
-        L1 = np.longdouble([to_longdouble("9.4949297755650788") , "0.0000000000000000"])
-        L2 = np.longdouble([to_longdouble("0.31310371412050"+lastdigits) , to_longdouble("9.4800157565608026")])
 
-        x = np.longdouble(data[::3])
-        y = np.longdouble(data[1::3])
-        r = np.longdouble(data[2::3])
-        #print "%s, using:" % os.path.split(__file__)[1]
-        #print __version__
-        packdata = get_packing_data(N, P0, x, y, r, **convertLvectors(L1, L2))
-        #print packdata
-        print lastdigits, packdata["gg"], 0.000109166-packdata["U"], packdata["sxy"]
+    L1 = np.array([9.4949297755650788 , 0.0000000000000000])
+    L2 = np.array([0.3131037141205079 , 9.4800157565608026])
 
-if __name__=="__main__":
-    main()
+    x = np.longdouble(data[::3])
+    y = np.longdouble(data[1::3])
+    r = np.longdouble(data[2::3])
+    print "%s, using:" % os.path.split(__file__)[1]
+    print __version__
+    print get_packing_data(N, P0, x, y, r, **convertLvectors(L1, L2))
