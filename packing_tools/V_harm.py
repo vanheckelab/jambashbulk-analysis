@@ -71,8 +71,9 @@ def get_contacts(packing):
     
     Ncontacts = sum(connmatrix, axis=0)
     rattlers=where((Ncontacts <= 2))[0]
+    dijfull = dij.copy()
     dij[~connmatrix] = 0
-    return {'xij': xij,'yij': yij,'rij':rij,'dij': dij,'nx':nx,'ny':ny, 'connmatrix': connmatrix, 'rattlers':rattlers} 
+    return {'xij': xij,'yij': yij,'rij':rij,'dij': dij, 'dijfull': dijfull, 'nx':nx,'ny':ny, 'connmatrix': connmatrix, 'rattlers':rattlers} 
 
 def V_harm(conts,packing):
     #the elastic constant :
