@@ -186,18 +186,58 @@ def loadPackingData(raw):
 class PackingWarning(UserWarning):
     pass
 
+import tempfile
+import shutil
+import subprocess
+def mkPackingLog(packingFile):
+    path, fn = os.path.split(packingFile)
+    N,P,num = fn.split(".")[0].split("~")
+
+    tmpdir = tempfile.mkdtemp(prefix='mkPacking-Merlijn')
+    try:
+        os.makedirs(tmpdir + "/Packings/%s~%s" % (N,P))
+        shutil.copy(packingFile, tmpdir + "/Packings/%s~%s/" % (N,P) + fn)
+        j2d = subprocess.Popen(["/home/valhallasw/src/jambashbulk/bin/jam2D"], stdin=subprocess.PIPE, cwd=tmpdir)
+        j2d.communicate("\n".join(["Packings/%s~%s" % (N,P), "1", "1", num, "3"]))
+        shutil.copy(tmpdir + "/Packings/%s~%s/" % (N,P) + "log"+fn, path + "/log" + fn)
+    finally:
+        shutil.rmtree(tmpdir)
+        pass
+
 def getPackings(folder):
+    import warnings
+    warnings.simplefilter("always", PackingWarning)
     prefix = getPrefix(folder)
+    import glob
+    packingfns = set(glob.glob(os.path.join(folder, "%s~????.txt") % prefix))
+    loglines = list(getUniqueParsedLogLines(folder))
+    packingswithlogs = set(os.path.join(folder, packingfn) for packingfn in ("%s~%04i.txt" % (prefix, logline['PackingNumber']) for logline in loglines))
+    missing = packingfns - packingswithlogs
+
     for logline in getUniqueParsedLogLines(folder):
         try:
             packingfn = "%s~%04i.txt" % (prefix, logline['PackingNumber'])
-            packing = loadPacking(os.path.join(folder, packingfn))
+            fullfn = os.path.join(folder, packingfn)
+            try:
+                packingfns.remove(fullfn)
+            except KeyError, e:
+                warnings.warn(repr(e), PackingWarning)
+            packing = loadPacking(fullfn)
             packing.update(logline) # copy information from log line
             yield packing
         except Exception, e:
-            import warnings
-            warnings.simplefilter("always", PackingWarning)
-            warnings.warn(str(e), PackingWarning)
+            warnings.warn(repr(e), PackingWarning)
+
+    if len(missing) != 0:
+         for fn in missing:
+             packing = loadPacking(fn)
+             packing["PackingNumber"] = int(os.path.split(fn)[1].split(".")[0].split("~")[-1])
+             import jamBashbulk
+             packing = jamBashbulk.updatePackingParams(packing)
+             yield packing
+             #print "Generating logfile for %s..." % fn
+             #mkPackingLog(fn)
+ 
 
 def getShear(folder):
     prefix = getPrefix(folder)
