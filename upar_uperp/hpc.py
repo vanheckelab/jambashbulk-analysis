@@ -4,8 +4,10 @@ Created on Thu Jan 24 11:32:09 2013
 
 @author: Merlijn van Deen
 """
+
 import time
 from pylab import *
+import numpy as np
 from packing_tools import V_harm
 from packing_tools.make_shear_graphs import plotparticles, plotunitcell
 
@@ -23,7 +25,8 @@ class HessianPackingCalculator(object):
             self.packing = group
         
         self.contacts = V_harm.get_contacts(self.packing)
-        self.K_ext = np.float64(V_harm.Hess(self.contacts, self.packing))
+        self.Hess = np.float64(V_harm.Hess(self.contacts, self.packing))
+        self.K_ext = self.Hess[:,:]
         self.rattlers = self.contacts['rattlers']
         
         #V_harm.Pmod(V_harm.El_Con(K_ext,rattlers,packing))
@@ -147,7 +150,7 @@ class HessianPackingCalculator(object):
             params[key] = base[key] - other[key]
         self.plot_deformation(**params)    
 
-    def get_uparrs(self, deformation=1):
+    def get_uparrs(self, deformation=1, including_non_bonds=False):
         assert(self.loaded)
         base = self.deform_packing(deformation)
         
@@ -155,8 +158,9 @@ class HessianPackingCalculator(object):
         yij_hat = self.contacts['yij'] / self.contacts['rij']
         
         connmatrix = self.contacts['connmatrix']
-        xij_hat[~connmatrix] = nan
-        yij_hat[~connmatrix] = nan
+        if not including_non_bonds:
+            xij_hat[~connmatrix] = nan
+            yij_hat[~connmatrix] = nan
         
         delta_x = base['delta_x']
         delta_y = base['delta_y']
@@ -188,3 +192,31 @@ class HessianPackingCalculator(object):
         u_perp_scaled = u_perp_scaled[isfinite(u_perp_scaled)]
         
         return u_parr, u_parr_scaled, u_perp, u_perp_scaled
+
+    def find_first_ccs(self):
+        """Returns gamma_min for mk and bk (in that order)
+           nan if not found..."""
+        u_par, u_perp = self.get_uparrs(2, True)
+        delta = self.contacts["dijfull"]
+        Rij = self.contacts["rij"]
+        gammas = -(delta / u_par) * (1 - (delta / Rij) * (u_perp / u_par)**2)
+        
+        try:
+            gmk = amin(gammas[(gammas>0) * (delta < 0)])
+        except ValueError:
+            gmk = np.nan
+        
+        try:
+            gbk = amin(gammas[(gammas>0) * (delta > 0)])
+        except ValueError:
+            gbk = np.nan
+            
+        return gmk*2, gbk*2  # epsilon, gamma, you know the drill...
+
+    def get_el_con(self):
+        el_con = V_harm.El_Con(self.Hess, self.rattlers, self.packing)
+        c = el_con.pop("c")
+        for i, element in enumerate(c):
+            el_con["c{num}".format(num=i+1)] = element
+        el_con["Galpha"] = self.deform_packing(deformation=2)['energy_cost']/self.packing["L"]**2/4
+        return el_con
