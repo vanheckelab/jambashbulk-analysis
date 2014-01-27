@@ -101,6 +101,7 @@ packing_attr_cache_dtype = np.dtype([
 
 def main(*argv):
     if len(argv) != 2:
+        print argv
         raise Exception("Usage: %s <glob base> <output hdf file>")
 
     bbase = argv[0]
@@ -122,4 +123,4 @@ def main(*argv):
         f.close()
 
 if __name__=="__main__":
-    main(sys.argv[1:])
+    main(*sys.argv[1:])
