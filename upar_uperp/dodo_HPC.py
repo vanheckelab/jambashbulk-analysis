@@ -4,6 +4,7 @@ import tables
 from hdf_tools import getcc
 import numpy as np
 from numpy import mean
+import traceback
 
 
 def RunOnH5File(source, target):
@@ -32,22 +33,13 @@ def RunOnH5File(source, target):
         return
     elements = []
     for i,item in enumerate(f):
-        if item._v_name == "0000":
+        if item._v_name in ["0000", "0001"]:
             continue
 
         try:
             d = item.SR.data.read()
-        except tables.NoSuchNodeError:
-            raise
-            continue
-            
-        try:
             staticpack = getattr(tabf, item._v_name)
-        except tables.NoSuchNodeError:
-            raise
-            continue
-            
-        try:
+           
             # get static packing stuff
             zHPC = HessianPackingCalculator(staticpack)
             gmk, gbk = zHPC.find_first_ccs()
@@ -92,9 +84,12 @@ def RunOnH5File(source, target):
             elements.append(rd)
 
         except Exception as e:
-            raise
             errf = open('errors', 'a')
-            errf.write("%s raised %r" % (item._v_pathname, e))
+            errf.write("\n\n{source} #{num}\n===============================\n".format(source=source, num=item._v_name))
+            traceback.print_exc(file=errf)
+            errf.write("\n")
+            errf.write(repr(e))
+            errf.write("\n")
             errf.close()
             continue
  
