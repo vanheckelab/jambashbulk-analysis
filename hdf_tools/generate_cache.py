@@ -7,6 +7,7 @@
 """
 
 import socket
+import os
 if socket.gethostname() == "Isilwen":
     basepath = "d:/h5/"
 else:
@@ -22,9 +23,7 @@ import tables
 import itertools
 import pytables_tools
 
-def get_data_row(packing, 
-                 
-                 packing_base=None):
+def get_data_row(packing, packing_base=None):
     null,N,P,num = packing._v_pathname.split('/')
     num = int(num)
     
@@ -43,12 +42,9 @@ def get_data_row(packing,
 
     i_min = before['step#']
     i_plus = after['step#']
-    print num,N,P,
     N = data["N"][0]
     P = data["P0"][0]
-    print N,P
-    
-    
+
     retval = dict(zip(['Nchanges_min', 'alpha_min', 'dH_base', 'dU_base', 'alpha_plus', 'delta_base', 'phi_min', 'sxy_calc_base', 'Uhelper_base', 'syy_calc_base', 'Nchanges_plus', 'L_base', 'num', 'i_min', 'P0_base', 's_xy_plus', 'L_min', 's_yy_plus', 'gamma_plus', 'N-_min', 'i_plus', 'phi_plus', 'maxGrad_base', 'P_calc_base', 'gg_min', 'syy_base', 'Z_base', 'N+_min', 'Neff_plus', 'P_min', 'Ncontacts_plus', 's_yy_min', 's_xy_min', 'dH_min', 'PackingNumber_base', 'Z_plus', 'gg_plus', 'phi_base', 'dU_min', 'Neff_min', 'P_base', 'Z_calc_base', 'alpha_base', 'N', 'P', 'U_calc_base', 'dU_plus', 'U_plus', 'P_plus', 'delta_plus', 'runtime (s)_base', 'L_plus', 'H_base', 'H_calc_base', 'N-_plus', 'gg_calc_base', 'H_plus', 'N - Ncorrected_base', 'delta_min', 's_xx_plus', 'N+_plus', 'sxx_calc_base', 'sxx_base', 'U_min', 'H_min', 'Z_min', 'gamma_min', 'Ncontacts_min', 'phi_calc_base', 'sxy_base', 'dH_plus', 's_xx_min'], itertools.repeat(nan)))    
     
     retval = {'N': N, 'P': P, 'num': num,
@@ -76,68 +72,97 @@ def get_data_row(packing,
             v + "_min" : before[v],
             v + "_plus" : after[v],
         })
-        
+    
     return retval
 
 STEPORDERS = []
-def get_data_rows(path = basepath + r'/N*_shear/N*~P*.h5'):
+def get_data_rows(path, linrespath):
     paths = sorted(glob.glob(path))
     print paths
     for fn in paths:
-          print fn, 
-          sff = tables.File(fn)
-          try:
-              pff = tables.File(fn.replace("_shear", "_tables"))
-          except IOError, e:
-              print e
-              continue
-          
-          # ASSUME: only one N, P...
-          try:
-              sf = sff.root.__iter__().next().__iter__().next()
-          except StopIteration:
-              print "could not find shear data"
-              continue
-          
-          try:
-              pf = pff.root.__iter__().next().__iter__().next()
-          except StopIteration:
-              print "could not find packing data"
-              continue
-          
-          print sf._v_pathname, pf._v_pathname,
-          
-          i = 0
-          for shearpack in sf:
-              try:
-                  if shearpack._v_name == '0001':
-                      continue # SKIP packing 1 - because of borked simulations continueing with #1
-                  basepack = pf.__getattr__(shearpack._v_name)
-              except tables.exceptions.NoSuchNodeError:
-                  basepack = None
-              try:
-                  row = get_data_row(shearpack, basepack) 
-              except Exception, e:
-                  if e.args[0][0] == 'step ordering':
-                      print e
-                      STEPORDERS.append(shearpack._v_pathname)
-                      row = None
-                  else:
-                      raise
-              yield row
-              i += 1
-          print i
-          sff.close()
-          pff.close()
-          
-def store_data_rows(frompath="/mnt/user/valhallasw/h5/NEW/*_shear.h5", topath="/mnt/user/valhallasw/h5/shear_summary_noparticles_20131211.h5"):
-    it = get_data_rows(frompath)
+        print fn, 
+        sff = tables.File(fn)
+        try:
+            pff = tables.File(fn.replace("_shear", "_tables"))
+        except IOError, e:
+            print e
+            continue
+        try:
+            linresnpy = np.load(os.path.join(linrespath,
+                                             os.path.split(fn)[-1].replace("_shear.h5", "_linres.npy"))
+                               )
+        except IOError, e:
+            if e.errno == 22: #Invalid Argument due to empty file
+                continue
+            raise
+        
+        # ASSUME: only one N, P...
+        try:
+            sf = sff.root.__iter__().next().__iter__().next()
+        except StopIteration:
+            print "could not find shear data"
+            continue
+        
+        try:
+            pf = pff.root.__iter__().next().__iter__().next()
+        except StopIteration:
+            print "could not find packing data"
+            continue
+        
+        print sf._v_pathname, pf._v_pathname,
+        
+        i = 0
+        for shearpack in sf:
+            try:
+                if shearpack._v_name in ['0000', '0001']:
+                    continue # SKIP packing 1 - because of borked simulations continueing with #1
+                basepack = pf.__getattr__(shearpack._v_name)
+            except tables.exceptions.NoSuchNodeError:
+                basepack = None
+            try:
+                row = get_data_row(shearpack, basepack) 
+            except Exception, e:
+                if e.args[0][0] == 'step ordering':
+                    print e
+                    STEPORDERS.append(shearpack._v_pathname)
+                    row = None
+                else:
+                    raise
+                    
+            if row:
+                #update row with linres data
+                lrd = linresnpy[linresnpy["num"] == int(shearpack._v_name)]
+                for name in lrd.dtype.names:
+                    if name in ["N", "P", "num"]:
+                        continue
+                    row[name] = lrd[name][0] if lrd else nan
+                    
+            yield row
+            i += 1
+        print i
+        sff.close()
+        pff.close()
+
+def store_data_rows(frompath="/mnt/user/valhallasw/h5/NEW/*_shear.h5", linrespath="/mnt/user/valhallasw/auto/linres/", topath="/mnt/user/valhallasw/h5/shear_summary_noparticles_20131211.h5"):
+    it = get_data_rows(frompath, linrespath)
     first = it.next()
 
     f = tables.File(topath, "w")
 
-    cols = first.keys()
-    df = pandas.DataFrame([first.values()], columns=cols)
+    def sortkey(colname):
+        prefix = 100
+        if "_base" in colname:
+            prefix = 0
+        elif "_min" in colname:
+            prefix = 1
+        elif "_plus" in colname:
+            prefix = 2
+            
+        return (prefix, colname.lower())
+    
+    cols = sorted(first.keys(), key=sortkey)
+    
+    df = pandas.DataFrame([[first[x] for x in cols]], columns=cols)
     df = df.to_records()
     df = df[cols]
     
@@ -154,4 +179,4 @@ def store_data_rows(frompath="/mnt/user/valhallasw/h5/NEW/*_shear.h5", topath="/
         f.flush(); f.close()
     
 if __name__=="__main__":
-    store_data_rows()
+    store_data_rows(*sys.argv[1:])

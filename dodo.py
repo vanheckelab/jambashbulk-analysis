@@ -75,11 +75,15 @@ def task_summarize_shear():
 
     for NP, pack_dirs in getNPdirpairs():
         dependencies.append(os.path.join('auto/h5', NP + "_shear.h5"))
-
+    for NP, pack_dirs in getNPdirpairs():
+        dependencies.append(os.path.join('auto/h5', NP + "_tables.h5"))
+    for NP, pack_dirs in getNPdirpairs():
+        dependencies.append(os.path.join('auto/linres', NP + "_linres.npy"))
+        
     return {'basename': target,
             'targets': [target],
             'file_dep': dependencies,
-            'actions': ["rm -f " + target, (generate_cache, (mask, target))]}
+            'actions': ["rm -f " + target, (generate_cache, (mask, "auto/linres/", target))]}
 
 def task_linear_response():
     globaldeps = [os.path.join(bp, 'packing_tools', 'V_harm.py'),
