@@ -110,7 +110,7 @@ def plotparticles(pack, offset=(0,0), coloring=None, **kwargs):
             kwargs['fc'] = cm.spectral((dx+rg)/(2*rg))
         plotparticle(pack, i, offset=offset, **kwargs)
 
-def plotcontacts(pack, offset=(0,0), **kwargs):
+def plotcontacts(pack, offset=(0,0), lwfactor=200, **kwargs):
     if 'color' not in kwargs:
         kwargs['color'] = 'black'
     conts = get_contacts(pack)
@@ -124,7 +124,8 @@ def plotcontacts(pack, offset=(0,0), **kwargs):
                 part = pack['particles'][col]
                 x,y = part['x'], part['y']
                 dx, dy = xij[row, col], yij[row, col]
-                plot([x+offset[0], x+dx+offset[0]], [y+offset[1], y+dy+offset[1]], lw = dij*200, **kwargs) # *6000 works for N256 P1e-4 
+                kwargs.setdefault('lw', dij*lwfactor)
+                plot([x+offset[0], x+dx+offset[0]], [y+offset[1], y+dy+offset[1]], **kwargs) # *6000 works for N256 P1e-4 
                 
                 
 
