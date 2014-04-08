@@ -170,9 +170,9 @@ class HessianPackingCalculator(object):
         
         L1def = base["L1def"]
         L2def = base["L2def"]        
-        
-        delta_xij = delta_xij - (self.contacts['nx'] * connmatrix) * L1def[0] - (self.contacts['ny'] * connmatrix) * L2def[0]
-        delta_yij = delta_yij - (self.contacts['nx'] * connmatrix) * L1def[1] - (self.contacts['ny'] * connmatrix) * L2def[1]        
+
+        delta_xij = delta_xij - self.contacts['nx'] * L1def[0] - self.contacts['ny'] * L2def[0]
+        delta_yij = delta_yij - self.contacts['nx'] * L1def[1] - self.contacts['ny'] * L2def[1]
         
         u_parr = (xij_hat * delta_xij) + (yij_hat * delta_yij)
         u_perp = sqrt(delta_xij**2 + delta_yij**2 - u_parr**2)
