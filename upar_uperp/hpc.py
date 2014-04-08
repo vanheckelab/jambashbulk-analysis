@@ -197,21 +197,57 @@ class HessianPackingCalculator(object):
         """Returns gamma_min for mk and bk (in that order)
            nan if not found..."""
         u_par, u_perp = self.get_uparrs(2, True)
+        u_par = -u_par
         delta = self.contacts["dijfull"]
         Rij = self.contacts["rij"]
-        gammas = -(delta / u_par) * (1 - (delta / Rij) * (u_perp / u_par)**2)
-        
-        try:
-            gmk = amin(gammas[(gammas>0) * (delta < 0)])
-        except ValueError:
-            gmk = np.nan
-        
-        try:
-            gbk = amin(gammas[(gammas>0) * (delta > 0)])
-        except ValueError:
-            gbk = np.nan
-            
-        return gmk*2, gbk*2  # epsilon, gamma, you know the drill...
+
+        # we use 2 methods to determine gamma
+        # full quadratic
+        a = u_par**2 + u_perp**2
+        b = 2 * Rij * u_par
+        c = -2 * Rij * delta - delta**2
+
+        # + for bk
+        gammas = (-b + sqrt(b**2 - 4*a*c)) / (2*a)
+        null, gbk_FQ = self.find_ccs_from_gammas(gammas)
+
+        # - for mk
+        gammas = (-b - sqrt(b**2 - 4*a*c)) / (2*a)
+        gmk_FQ, null = self.find_ccs_from_gammas(gammas)
+
+        #gammas = (delta / u_par) * (1 - (delta / Rij) * (u_perp / u_par)**2)
+        #gmk_SQ, gbk_SQ = self.find_ccs_from_gammas(gammas)
+        #
+        #gammas = (delta / u_par) * (1 - (delta / Rij) * (u_perp**2 / (u_perp**2 + u_par**2)))
+        #gmk_SQ2, gbk_SQ2 = self.find_ccs_from_gammas(gammas)
+
+        # simple linear
+        gammas = (delta / u_par)
+        gmk_SL, gbk_SL = self.find_ccs_from_gammas(gammas)
+
+        return {k: v for k,v in locals().items() if k.startswith('gmk') or k.startswith('gbk')}
+
+    def find_ccs_from_gammas(self,gammas):
+        rattlers = self.contacts["rattlers"]
+        connmatrix = self.contacts["connmatrix"] 
+
+        gmk = np.nan
+        gbk = np.nan
+
+        gammas_f = gammas[gammas>0]
+        order = argsort(gammas_f)
+
+        for i in range(0, len(gammas_f), 2):
+            idx = where(gammas == gammas_f[order[i]])
+            if idx[0][0] not in rattlers and idx[0][1] not in rattlers:
+                if connmatrix[idx][0] and not isfinite(gbk):
+                    gbk = 2*gammas_f[order[i]]
+                elif (not connmatrix[idx][0]) and not isfinite(gmk):
+                    gmk = 2*gammas_f[order[i]]
+                if isfinite(gmk) and isfinite(gbk):
+                    break
+
+        return gmk, gbk
 
     def get_el_con(self):
         el_con = V_harm.El_Con(self.Hess, self.rattlers, self.packing)

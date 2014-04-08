@@ -76,6 +76,7 @@ def get_data_row(packing, packing_base=None):
     return retval
 
 STEPORDERS = []
+ignore_errnos = [22] #Invalid Argument due to empty file
 def get_data_rows(path, linrespath):
     paths = sorted(glob.glob(path))
     print paths
@@ -92,7 +93,7 @@ def get_data_rows(path, linrespath):
                                              os.path.split(fn)[-1].replace("_shear.h5", "_linres.npy"))
                                )
         except IOError, e:
-            if e.errno == 22: #Invalid Argument due to empty file
+            if e.errno in ignore_errnos:
                 continue
             raise
         

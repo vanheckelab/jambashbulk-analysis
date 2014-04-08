@@ -42,9 +42,10 @@ def RunOnH5File(source, target):
            
             # get static packing stuff
             zHPC = HessianPackingCalculator(staticpack)
-            gmk, gbk = zHPC.find_first_ccs()
+            ccGammas = zHPC.find_first_ccs()
             delta = mean(zHPC.contacts["dij"][zHPC.contacts["dij"] > 0])
             zElCon = zHPC.get_el_con()
+            zElCon.update(ccGammas)
             del zHPC
 
             # after shear packing attrs
@@ -70,8 +71,8 @@ def RunOnH5File(source, target):
             del aHPC
             
             # build return dict
-            values = [delta, gmk, gbk] + zElCon.values() + aElCon.values()
-            keys = ['mean_delta_base', 'gamma_lr_mk_base', 'gamma_lr_bk_base'] + \
+            values = [delta] + zElCon.values() + aElCon.values()
+            keys = ['mean_delta_base'] + \
                    [k + "_base" for k in zElCon.keys()] + \
                    [k + "_plus" for k in aElCon.keys()]
             

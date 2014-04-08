@@ -10,6 +10,7 @@ sys.path.append(bp)
 
 from hdf_tools.pytables_test import main as import_tables
 from hdf_tools.pytables_import_shear import main as import_shear
+import hdf_tools.generate_cache
 from hdf_tools.generate_cache import store_data_rows as generate_cache
 from hdf_tools import getcc
 from upar_uperp.hpc import HessianPackingCalculator
@@ -79,7 +80,8 @@ def task_summarize_shear():
         dependencies.append(os.path.join('auto/h5', NP + "_tables.h5"))
     for NP, pack_dirs in getNPdirpairs():
         dependencies.append(os.path.join('auto/linres', NP + "_linres.npy"))
-        
+
+    hdf_tools.generate_cache.ignore_errnos.append(2)
     return {'basename': target,
             'targets': [target],
             'file_dep': dependencies,
@@ -100,4 +102,9 @@ def task_linear_response():
                'file_dep': dependencies,
                'actions': [(calc_linear_response, (src, target))]}
 
-#DOIT_CONFIG = {'default_tasks': ['auto/h5/shear_summary_cache.h5', task_summarize_shear]} 
+#DOIT_CONFIG = {'default_tasks': ['auto/h5/shear_summary_cache.h5', task_summarize_shear]}
+
+x = task_summarize_shear()
+
+print "hdf_tools.generate_cache.ignore_errnos.append(2)"
+print "generate_cache", x['actions'][1][1]
