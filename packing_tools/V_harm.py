@@ -12,6 +12,8 @@ from numpy import linalg as LA
 
 from copy import copy
 
+VISCOUS = False
+
 def get_contacts(packing):
     """ In: packing={'particles': {'x': [...], 'y': [...], 'r': [...]},
                     {'L1': ..., 'L2': ..., 'L': ...}}
@@ -60,17 +62,22 @@ def get_contacts(packing):
     connmatrix = dij > 0
     np.fill_diagonal(connmatrix, False)
     
-    while True:
-        Ncontacts = sum(connmatrix, axis=0)
-        rattlers = where((Ncontacts > 0) * (Ncontacts <= 2))[0]                
-        if len(rattlers) == 0:
-            break
-        connmatrix[rattlers,:] = False
-        connmatrix[:, rattlers] = False
+    if not VISCOUS:
+        while True:
+            Ncontacts = sum(connmatrix, axis=0)
+            rattlers = where((Ncontacts > 0) * (Ncontacts <= 2))[0]                
+            if len(rattlers) == 0:
+                break
+            connmatrix[rattlers,:] = False
+            connmatrix[:, rattlers] = False
     
     
     Ncontacts = sum(connmatrix, axis=0)
-    rattlers=where((Ncontacts <= 2))[0]
+    
+    if VISCOUS:
+        rattlers = np.array([], dtype=np.int)
+    else:
+        rattlers=where((Ncontacts <= 2))[0]
     dijfull = dij.copy()
     dij[~connmatrix] = 0
     return {'xij': xij,'yij': yij,'rij':rij,'dij': dij, 'dijfull': dijfull, 'nx':nx,'ny':ny, 'connmatrix': connmatrix, 'rattlers':rattlers} 
