@@ -1,4 +1,5 @@
 # coding: utf-8
+import os
 from hpc import HessianPackingCalculator
 import tables
 from hdf_tools import getcc
@@ -7,7 +8,7 @@ from numpy import mean
 import traceback
 
 
-def RunOnH5File(source, target):
+def RunOnH5File(source, target, targetdir):
     """ For all packings in an H5 shear file, calculate:
     
         On the BASE packing:
@@ -25,7 +26,11 @@ def RunOnH5File(source, target):
         source = "/mnt/user/valhallasw/auto/h5/N32~P2154e-6_shear.h5"
         target = "/mnt/user/valhallasw/auto/linres/N32~P2154e-6_linres.npy"
     """
-
+    try:
+        os.makedirs(targetdir)
+    except OSError:
+        pass
+        
     try:
         f = tables.File(source).root.__iter__().next().__iter__().next()
         tabf = tables.File(source.replace("_shear", "_tables")).root.__iter__().next().__iter__().next()
@@ -46,7 +51,24 @@ def RunOnH5File(source, target):
             delta = mean(zHPC.contacts["dij"][zHPC.contacts["dij"] > 0])
             zElCon = zHPC.get_el_con()
             zElCon.update(ccGammas)
+            
+            try:
+                # now we also want to store the linear response particle data!
+                u_par, u_perp = zHPC.get_uparrs(2, True)
+                deltas = zHPC.contacts["dijfull"]
+                Rijs = zHPC.contacts["rij"]
+                
+                np.save(targetdir + "/%s.npy" % item._v_name, {'u_par': u_par, 'u_perp': u_perp, 'deltas': deltas, 'Rijs': Rijs})
+            except Exception as e:
+                errf = open('errors', 'a')
+                errf.write("\n\n{source} #{num}\n===============================\n".format(source=source, num=item._v_name))
+                traceback.print_exc(file=errf)
+                errf.write("\n")
+                errf.write(repr(e))
+                errf.write("\n")
+                errf.close()
             del zHPC
+            
 
             # after shear packing attrs
             bef, aft = getcc.get_first_cc(item, d)
@@ -83,6 +105,8 @@ def RunOnH5File(source, target):
             rd = np.array([tuple(values)], dtype=dtypes)
                          
             elements.append(rd)
+            
+
 
         except Exception as e:
             errf = open('errors', 'a')
