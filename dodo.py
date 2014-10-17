@@ -7,6 +7,7 @@ import numpy as np
 
 bp = '/home/valhallasw/src/phd-library/'
 sys.path.append(bp)
+sys.path.append(bp.replace('valhallasw', 'merlijn')
 
 from hdf_tools.pytables_test import main as import_tables
 from hdf_tools.pytables_import_shear import main as import_shear
@@ -96,11 +97,12 @@ def task_linear_response():
         src = os.path.join('auto/h5', NP + "_shear.h5")
         dependencies.append(src)
         target = os.path.join('auto/linres', NP + '_linres.npy')
+        lrdatadir = os.path.join('auto/linres_upps', NP)
 
         yield {'basename': target,
                'targets': [target],
                'file_dep': dependencies,
-               'actions': [(calc_linear_response, (src, target))]}
+               'actions': [(calc_linear_response, (src, target, lrdatadir))]}
 
 #DOIT_CONFIG = {'default_tasks': ['auto/h5/shear_summary_cache.h5', task_summarize_shear]}
 
