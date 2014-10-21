@@ -1,10 +1,28 @@
+import os
 from ctypes import *
+
+if os.name == "nt":
+    from numpy import float64, float64 as longdouble, array
+    libc = cdll.msvcrt 
+    cparser = CDLL(os.path.join(os.path.split(__file__)[0], "_parser.dll"))
+    c_longdouble = c_double
+    def raise_error():
+        raise WinError()
+        
+else:
+    from numpy import float64, float128 as longdouble, array
+    libc = cdll.LoadLibrary("libc.so.6")
+    cparser = CDLL(os.path.join(os.path.split(__file__)[0], "_parser.so"))
+    
+    def raise_error():
+        errno = c_int.in_dll(libc, "errno").value
+        raise IOError(errno, libc.strerror(errno))       
+
 import numpy as np
-from numpy import float64, float128, array
+
 import os
 
-cparser = CDLL(os.path.join(os.path.split(__file__)[0], "_parser.so"))
-libc = cdll.LoadLibrary("libc.so.6")
+
 
 fopen = libc.fopen
 fclose = libc.fclose
@@ -33,8 +51,8 @@ def create_packing(H, particles):
     y = particles[:,1]
     r = particles[:,2]
 
-    x_major = float64(x); x_minor = float64(x-float128(x_major))
-    y_major = float64(y); y_minor = float64(y-float128(y_major))
+    x_major = float64(x); x_minor = float64(x-longdouble(x_major))
+    y_major = float64(y); y_minor = float64(y-longdouble(y_major))
     r = float64(r)
 
     particles = array(zip(x_major, x_minor, y_major, y_minor, r), dtype=[('x', float64), ('x_err', float64),
@@ -53,15 +71,14 @@ def create_packing(H, particles):
 def read_packings(fn):
     fptr = fopen(fn, "r")
     if not fptr:
-        errno = c_int.in_dll(libc, "errno").value
-        raise IOError(errno, libc.strerror(errno))
+        raise_error()
 
     try:
         h = Header()
         while(cparser.read_header(fptr, byref(h)) == 8):
 #            print ".",
             import sys; sys.stdout.flush()
-            particles = np.zeros([h.N, 3], dtype=np.longdouble)
+            particles = np.zeros([h.N, 3], dtype=longdouble)
             retval = cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
             if retval == 0:
                 yield create_packing(h, particles)
@@ -73,4 +90,7 @@ def read_packings(fn):
         fclose(fptr)
 
 if __name__ == "__main__":
-    it = read_packings('N32~P1e-3~9000.txt')
+    it = read_packings('N32~P1e-1~9000.txt')
+    for i in it:
+        print i
+        break

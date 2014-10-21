@@ -6,16 +6,22 @@
 
 const int _eof = EOF;
 
+#ifdef WIN32
+    typedef double LDBL ;
+#else
+    typedef long double LDBL ;
+#endif
+
 struct s_header
 {
     int N;
-    long double L;
-    long double L1x;
-    long double L1y;
-    long double L2x;
-    long double L2y;
-    long double P;
-    long double P0;
+    LDBL L;
+    LDBL L1x;
+    LDBL L1y;
+    LDBL L2x;
+    LDBL L2y;
+    LDBL P;
+    LDBL P0;
 };
 
 int read_header(FILE * source, struct s_header *header)
@@ -37,7 +43,7 @@ int read_header(FILE * source, struct s_header *header)
     return ctr;
 }
 
-int read_particles(FILE * source, long double * storage) {
+int read_particles(FILE * source, LDBL * storage) {
     fscanf(source, " { ");
     while(fscanf(source, " %Lf ,", storage++) > 0);
     fscanf(source, " } ");
