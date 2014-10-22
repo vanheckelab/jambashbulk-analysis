@@ -64,3 +64,40 @@ def get_first_ccs(group, data=None):
     after  = subdata[subdata["gamma"] >= amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
 
     return before, after   
+
+def get_multi_ccs(group, data=None, error_cutoff=1000):
+    if data is None:
+        data = get_first_ccs_base(group, data)["data"]
+    ordata = data
+    
+    id_ctr = 0
+    stop = False
+    for i in range(error_cutoff):
+        try:
+            result = get_first_ccs_base(group, data)
+            lcid = id_ctr + result['lastconvergenceid'] + 1
+        except KeyError:
+            # no convergence found, assume = last id of array
+            lcid = id_ctr + len(data)
+            stop = True
+
+        subdata = result["subdata"]
+        
+        before = ordata[ordata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
+        before=before[0];
+        after  = ordata[ordata["gamma"] == amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
+        after=after[0];
+        
+        yield (before, after)
+        
+        if not stop:
+            data = ordata[lcid:]
+            id_ctr = lcid
+            
+            # reset Nchanges to new base state
+            data["Nchanges"] = data["Nchanges"] - amin(data["Nchanges"])
+        else:
+            break
+
+    else:
+        raise Exception("Error cutoff triggered after %i iterations" % i)
