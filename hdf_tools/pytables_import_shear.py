@@ -88,12 +88,7 @@ def read_csv(fn, converters={}):
     except Exception, e:
         raise CSVReadException(e)
 
-def process_measurement(f, key, base, m, spec):
-    group = require_group(f,'/'.join(key))
-    
-#    spec = "~".join(m) + ".txt"
-    print key, ":", spec,
-    
+def load_measurement(base, spec):
     log, comments = read_csv(os.path.join(base, "log" + spec), converters={'P0': np.float64})
     print "log",
     sys.stdout.flush()
@@ -122,8 +117,6 @@ def process_measurement(f, key, base, m, spec):
     # (probably the first strain is not 0 there. Or something.)
     # :-( - Merlijn 4/2/13
     # 10^-16 was actually 10^-8, I think. Incorrect 'small gamma' correction where the data for 10^-8 was written with 10^-16 as listed strain
-    
-    group._v_attrs['comments'] = comments
 
     if insert_particles:
         try:
@@ -169,7 +162,18 @@ def process_measurement(f, key, base, m, spec):
             
     else:
         packings = data.join(log, rsuffix="__")
+        
+    return comments, packings, log
 
+def process_measurement(f, key, base, m, spec):
+    group = require_group(f,'/'.join(key))
+    
+#    spec = "~".join(m) + ".txt"
+    print key, ":", spec,
+      
+    comments, packings, log = load_measurement(base, spec)
+
+    group._v_attrs['comments'] = comments
     attrcache = require_table(group, 'data', packing_attr_cache_dtype,
                               expectedrows=len(log), chunkshape=(len(log),))
     for rowno, row in packings.iterrows():

@@ -35,24 +35,24 @@ from numpy import loadtxt
 from load_log import getUniqueParsedLogLines
 from fs_tools import getPrefix
 
-if os.name == 'posix':
-    from parser import parser
-    def loadPackings(filename):
-        return [p for p in parser.read_packings(filename)]
-else:
-    def loadPackings(filename):
-        try:
-            f = open(filename)
-        except Exception:
-            import time
-            time.sleep(30)
-            f = open(filename)
-            
-        raw = f.read().strip().lstrip('\x00')
-        f.close()
-        
-        packings = raw.split("\n\n")
-        return [loadPackingData(p) for p in packings]
+#if os.name == 'posix':
+from parser import parser
+def loadPackings(filename):
+    return [p for p in parser.read_packings(filename)]
+#else:
+#    def loadPackings(filename):
+#        try:
+#            f = open(filename)
+#        except Exception:
+#            import time
+#            time.sleep(30)
+#            f = open(filename)
+#            
+#        raw = f.read().strip().lstrip('\x00')
+#        f.close()
+#        
+#        packings = raw.split("\n\n")
+#        return [loadPackingData(p) for p in packings]
         
 def loadPacking(filename):
     if os.path.split(filename)[1].lower().startswith('xconf'):
