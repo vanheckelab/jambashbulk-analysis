@@ -72,7 +72,7 @@ class CSVReadException(Exception):
 
 def read_csv(fn, converters={}):
     try:
-        f = open(fn)
+        f = open(fn, "rb")
         comments = ""
         
         while True:
@@ -82,6 +82,7 @@ def read_csv(fn, converters={}):
             if line.startswith('#'):
                 comments += line
             else:
+                print line
                 f.seek(oldpos)
                 break
         return pandas.read_csv(f, sep="[ \t]", converters=converters), comments
