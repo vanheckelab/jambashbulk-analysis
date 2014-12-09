@@ -90,11 +90,11 @@ def read_csv(fn, converters={}):
 
 def load_measurement(base, spec):
     log, comments = read_csv(os.path.join(base, "log" + spec), converters={'P0': np.float64})
-    print "log",
+    #print "log",
     sys.stdout.flush()
     
     data, comments = read_csv(os.path.join(base, "data" + spec))
-    print "data",
+    #print "data",
     sys.stdout.flush()
     assert (len(log) == len(data)), "log and data have different lengths"
 
@@ -121,7 +121,7 @@ def load_measurement(base, spec):
     if insert_particles:
         try:
             if os.path.exists(os.path.join(base, "particles" + spec)):
-                print "particles",
+                #print "particles",
                 sys.stdout.flush()
                 # new format, where we know the particle positions for every step
                 particles = loadPackings(os.path.join(base, "particles" + spec))
@@ -135,7 +135,7 @@ def load_measurement(base, spec):
                 packings = data.join(particles, rsuffix="_").join(log, rsuffix="__")
                 print len(packings)
             elif os.path.exists(os.path.join(base, spec)):
-                print "oldparticles",
+                #print "oldparticles",
                 sys.stdout.flush()
 
                 # old format where we only know some particle positions
@@ -152,7 +152,7 @@ def load_measurement(base, spec):
                 particles["step#"] = array(packings["step#"][argmin(abs(packings["dL20"][:, np.newaxis] - array(particles["dL20"])), axis=0)])
                 packings = packings.merge(particles, how="left", left_on="step#", right_on="step#", suffixes=("", "_"))
             else:
-                print "noparticles"
+                #print "noparticles"
                 packings = data.join(log, rsuffix="__")
         except IOError, e:
             raise
