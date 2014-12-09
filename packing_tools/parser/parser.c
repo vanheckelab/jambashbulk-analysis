@@ -24,6 +24,14 @@ struct s_header
     LDBL P0;
 };
 
+void test() {
+	printf("sizeof(int) is %i\n", sizeof(int));
+	printf("sizeof(LDBL) is %i\n", sizeof(LDBL));
+	printf("sizeof(s_header) is %i\n", sizeof(struct s_header));
+	printf("sizeof(int*) is %i\n", sizeof(int*));
+	printf("sizeof(FILE) is %i\n", sizeof(FILE));
+}
+
 int read_header(FILE * source, struct s_header *header)
 {
     while(fgetc(source) == '#') while(fgetc(source) != '\n');
