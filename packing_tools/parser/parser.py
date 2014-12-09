@@ -22,13 +22,6 @@ import numpy as np
 
 import os
 
-
-
-fopen = libc.fopen
-fclose = libc.fclose
-
-libc.strerror.restype = c_char_p
-
 class Header(Structure):
     _fields_ = [("N", c_int),
                 ("L", c_longdouble),
@@ -46,6 +39,17 @@ class Header(Structure):
             jetzers.append("%s=%s" % (f, getattr(self, f)))
         return "; ".join(jetzers)
 
+fopen = libc.fopen
+fopen.restype = c_void_p
+
+fclose = libc.fclose
+fclose.argtypes = (c_void_p,)
+
+libc.strerror.restype = c_char_p
+
+cparser.read_header.argtypes = (c_void_p, POINTER(Header))
+cparser.read_particles.argtypes = (c_void_p, POINTER(c_longdouble))
+        
 def create_packing(H, particles):
     x = particles[:,0]
     y = particles[:,1]
@@ -69,14 +73,14 @@ def create_packing(H, particles):
      'particles': particles}
 
 def read_packings(fn):
-    fptr = fopen(fn, "r")
+    fptr = fopen(fn, "rb")
+    
     if not fptr:
         raise_error()
 
     try:
         h = Header()
         while(cparser.read_header(fptr, byref(h)) == 8):
-#            print ".",
             import sys; sys.stdout.flush()
             particles = np.zeros([h.N, 3], dtype=longdouble)
             retval = cparser.read_particles(fptr, particles.ctypes.data_as(POINTER(c_longdouble)))
