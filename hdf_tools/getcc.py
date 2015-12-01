@@ -99,6 +99,7 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
     for i in range(error_cutoff):
         try:
             result = get_first_ccs_base(group, data)
+            #print result
             lcid = id_ctr + result['lastconvergenceid'] + 1
         except KeyError:
             # no convergence found, assume = last id of array
@@ -106,6 +107,7 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
             stop = True
 
         subdata = result["subdata"]
+        print data["Nchanges"], subdata["Nchanges"]
         
         
         if amin(subdata["N+"] + subdata["N-"]) > 0:

@@ -54,6 +54,6 @@ def plot_icdf(data, *args, **kwargs):
     x = [data[0]-maxdatastep] + x + [data[-1]+maxdatastep]
     
     y = [0] + sorted(range(length) + range(length))[1:] + [length, length]
-    y = float16(y)/length
+    y = float_(y)/length
     
     return plot(x,1-y, *args, **kwargs)
