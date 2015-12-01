@@ -27,7 +27,7 @@ def plot_cdf(data, *args, **kwargs):
     x,y = get_cdf_data(data)    
     return plot(x,y, *args, **kwargs)
 
-def get_cdf_data(data):
+def get_cdf_data(data, lower=None, upper=None):
     data = array(data)
     data = data[isfinite(data)]
     if data.size == 0:
@@ -35,9 +35,13 @@ def get_cdf_data(data):
    
     length = len(data)
     maxdatastep = max(data)-min(data) #max(diff(data))
+    if lower is None:
+        lower = data[0]-maxdatastep
+    if upper is None:
+        upper = data[-1]+maxdatastep
     data = list(data) + list(data)
     x = sorted(data)
-    x = [data[0]-maxdatastep] + x + [data[-1]+maxdatastep]
+    x = [lower] + x + [upper]
     
     y = [0] + sorted(range(length) + range(length))[1:] + [length, length]
     y = float_(y)/length
