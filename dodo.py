@@ -7,7 +7,7 @@ import numpy as np
 
 bp = '/home/valhallasw/src/phd-library/'
 sys.path.append(bp)
-sys.path.append(bp.replace('valhallasw', 'merlijn')
+sys.path.append(bp.replace('valhallasw', 'merlijn'))
 
 from hdf_tools.pytables_test import main as import_tables
 from hdf_tools.pytables_import_shear import main as import_shear
