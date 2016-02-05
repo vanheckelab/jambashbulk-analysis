@@ -69,6 +69,31 @@ def RunOnH5File(source, target, targetdir):
                 errf.close()
             del zHPC
             
+            # before shear packing attrs
+            bef, aft = getcc.get_first_cc(item, d)
+
+            ag = bef["gamma"]
+
+            sortg = np.argsort(d["gamma"])
+
+            for gi in sortg[d[sortg]["gamma"] <= ag]:
+                path = d[gi]["path"]
+                if d[gi]["gamma"] < ag/2:
+                    continue
+                SR = item._v_file.getNode(path)
+                if hasattr(SR, 'particles'):
+                    aftpath = path
+                    break
+            else:
+                aftpath = None
+                print item._v_name, "before not found"
+
+            if aftpath:
+                HPC = HessianPackingCalculator(f._v_file.getNode(aftpath))
+                bElCon = HPC.get_el_con()
+                del HPC
+            else:
+                bElCon = {'c%i'%i: np.nan for i in [1,2,3,4,5,6]}
 
             # after shear packing attrs
             bef, aft = getcc.get_first_cc(item, d)
@@ -86,17 +111,22 @@ def RunOnH5File(source, target, targetdir):
                     aftpath = path
                     break
             else:
-                raise Exception("No after state found")
+                aftpath = None
+                print item._v_name, "before not found"
 
-            aHPC = HessianPackingCalculator(f._v_file.getNode(aftpath))
-            aElCon = aHPC.get_el_con()
-            del aHPC
-            
+            if aftpath:
+                HPC = HessianPackingCalculator(f._v_file.getNode(aftpath))
+                aElCon = HPC.get_el_con()
+                del HPC
+            else:
+                aElCon = {'c%i'%i: np.nan for i in [1,2,3,4,5,6]}
+          
             # build return dict
-            values = [delta] + zElCon.values() + aElCon.values()
+            values = [delta] + zElCon.values() + bElCon.values() + aElCon.values()
             keys = ['mean_delta_base'] + \
                    [k + "_base" for k in zElCon.keys()] + \
-                   [k + "_plus" for k in aElCon.keys()]
+                   [k + "_min" for k in bElCon.keys()] + \
+                  [k + "_plus" for k in aElCon.keys()]
             
             dtypes = [(name, np.float64) for name in keys]
             
