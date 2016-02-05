@@ -29,6 +29,7 @@ def require_table(root, name, dtype, *args, **kwargs):
         return root._v_file.createTable(root, name, dtype, *args, **kwargs)
 
 def store_table(root, name, data, *args, **kwargs):
+    data = numpy.array(data)
     return root._v_file.createTable(root, name, data, expectedrows=data.shape[0], chunkshape=data.shape)
 
 def add_to_table(table, data={}, **kwargs):

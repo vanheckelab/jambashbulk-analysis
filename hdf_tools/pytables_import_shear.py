@@ -146,7 +146,7 @@ def load_measurement(base, spec):
                 particles = pandas.DataFrame(particles)
                 
                 # create comparison columns: change in L2[0]
-                particles["dL20"] = (array([x[0] for x  in particles["L2"]]) - particles["L2"][0][0])
+                particles["dL20"] = (array([x[0] for x  in particles["L2"]]) - np.array(particles["L2"][0])[0])
                 packings["dL20"] = packings["gamma"] * packings["L"]
                 
                 # from this, we can determine the correct step#s
@@ -258,11 +258,19 @@ def main(*argv):
                     raise
             except (IOError, EOFError, StopIteration, CSVReadException), e:
                 print key, repr(e)
+            except (KeyError) as e:
+                if str(e) in ["'step#'"]:  # note the internal '!
+                    print key, repr(e)
+                else:
+                    raise
             except (Exception, ), e:
                 if str(e) in ["Reindexing only valid with uniquely valued Index objects"]:
                     print key, repr(e)
                 else:
                     raise
+#    except Exception as e:
+#        import doit.tools
+#        doit.tools.set_trace()
     finally:
         f.flush()
         f.close()

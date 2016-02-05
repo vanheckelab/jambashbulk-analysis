@@ -29,11 +29,11 @@ def getNPdirpairs():
         yield NP, sorted(pack_dirs, reverse=True)
 
 def task_read_base_packings():
-    globaldeps = [os.path.join(bp, 'hdf_tools', 'pytables_test.py'),
-                  os.path.join(bp, 'packing_tools', 'load_packing.py')]
+#    globaldeps = [os.path.join(bp, 'hdf_tools', 'pytables_test.py'),
+#                  os.path.join(bp, 'packing_tools', 'load_packing.py')]
 
     for NP, pack_dirs in getNPdirpairs():
-        dependencies = globaldeps[:]
+        dependencies = [] #globaldeps[:]
         for pack_dir in pack_dirs:
             dependencies.extend(glob.glob(os.path.join(pack_dir, NP + "~????.txt")))
 
@@ -46,13 +46,13 @@ def task_read_base_packings():
                'actions': ["rm -f "+target] + [(import_tables, (pd, target)) for pd in pack_dirs]}
 
 def task_read_shear_packings():
-    globaldeps = [os.path.join(bp, 'hdf_tools', 'pytables_import_shear.py'),
-                  os.path.join(bp, 'hdf_tools', 'pytables_tools.py'),
-                  os.path.join(bp, 'hdf_tools', 'pytables_test.py'),
-                  os.path.join(bp, 'packing_tools', 'load_packing.py')]
+#    globaldeps = [os.path.join(bp, 'hdf_tools', 'pytables_import_shear.py'),
+#                  os.path.join(bp, 'hdf_tools', 'pytables_tools.py'),
+#                  os.path.join(bp, 'hdf_tools', 'pytables_test.py'),
+#                  os.path.join(bp, 'packing_tools', 'load_packing.py')]
 
     for NP, pack_dirs in getNPdirpairs():
-        dependencies = globaldeps[:]
+        dependencies = [] #globaldeps[:]
         for pack_dir in pack_dirs:
             dependencies.extend(glob.glob(os.path.join(pack_dir, "log" + NP + "~SR*.txt")))
             dependencies.extend(glob.glob(os.path.join(pack_dir, "data" + NP + "~SR*.txt")))
@@ -68,9 +68,10 @@ def task_read_shear_packings():
                'actions': ["rm -f " + target] + [(import_shear, (pd, target)) for pd in pack_dirs]}
 
 def task_summarize_shear():
-    dependencies = [os.path.join(bp, 'hdf_tools', 'generate_cache.py'),
-                    os.path.join(bp, 'hdf_tools', 'getcc.py'),
-                    os.path.join(bp, 'hdf_tools', 'pytables_tools.py')]
+#    dependencies = [os.path.join(bp, 'hdf_tools', 'generate_cache.py'),
+#                    os.path.join(bp, 'hdf_tools', 'getcc.py'),
+#                    os.path.join(bp, 'hdf_tools', 'pytables_tools.py')]
+    dependencies = []
 
     target = 'auto/h5/shear_summary_cache.h5'
     mask = 'auto/h5/*_shear.h5'
@@ -89,11 +90,11 @@ def task_summarize_shear():
             'actions': ["rm -f " + target, (generate_cache, (mask, "auto/linres/", target))]}
 
 def task_linear_response():
-    globaldeps = [os.path.join(bp, 'packing_tools', 'V_harm.py'),
-                  os.path.join(bp, 'upar_uperp', 'hpc.py'),
-                  os.path.join(bp, 'upar_uperp', 'dodo_HPC.py')]
+#    globaldeps = [os.path.join(bp, 'packing_tools', 'V_harm.py'),
+#                  os.path.join(bp, 'upar_uperp', 'hpc.py'),
+#                  os.path.join(bp, 'upar_uperp', 'dodo_HPC.py')]
     for NP, pack_dirs in getNPdirpairs():
-        dependencies = globaldeps[:]
+        dependencies = [] #globaldeps[:]
         src = os.path.join('auto/h5', NP + "_shear.h5")
         dependencies.append(src)
         target = os.path.join('auto/linres', NP + '_linres.npy')
