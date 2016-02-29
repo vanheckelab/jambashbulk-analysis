@@ -77,8 +77,10 @@ def RunOnH5File(source, target, targetdir):
             ag = bef["gamma"]
 
             sortg = np.argsort(d["gamma"])
+            rsortg = sortg[::-1]
 
-            for gi in sortg[d[sortg]["gamma"] <= ag]:
+            # here we walk from cc to gamma=-infty
+            for gi in rsortg[d[rsortg]["gamma"] <= ag]:
                 path = d[gi]["path"]
                 if d[gi]["gamma"] < ag/2:
                     continue
@@ -104,6 +106,7 @@ def RunOnH5File(source, target, targetdir):
 
             sortg = np.argsort(d["gamma"])
 
+            # here we walk from cc to gamma=intfty
             for gi in sortg[d[sortg]["gamma"] >= ag]:
                 path = d[gi]["path"]
                 if d[gi]["gamma"] > 2*ag:
