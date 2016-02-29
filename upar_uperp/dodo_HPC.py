@@ -159,5 +159,10 @@ def RunOnH5File(source, target, targetdir):
             continue
  
     if elements:
+        print "Saving", len(elements), "systems to", target
         np.save(target, np.concatenate(elements))
+    else:
+        print "No elements for", target
+        if not os.path.exists(target):
+            open(target, 'w')
         
