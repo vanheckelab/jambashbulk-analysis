@@ -36,8 +36,8 @@ def RunOnH5File(source, target, targetdir):
     try:
         f = tables.File(source).root.__iter__().next().__iter__().next()
         tabf = tables.File(source.replace("_shear", "_tables")).root.__iter__().next().__iter__().next()
-    except StopIteration:
-        return
+    except StopIteration as e:
+        f = []
     elements = []
     for i,item in enumerate(f):
         if item._v_name in ["0000", "0001"]:
