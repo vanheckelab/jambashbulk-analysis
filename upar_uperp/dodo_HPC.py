@@ -8,6 +8,8 @@ from numpy import mean
 import traceback
 
 
+fail_elcon = {x: np.nan for x in ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'Dac', 'Udc', 'Gdc', 'Uac', 'Gac', 'Galpha']}
+
 def RunOnH5File(source, target, targetdir):
     """ For all packings in an H5 shear file, calculate:
     
@@ -93,7 +95,7 @@ def RunOnH5File(source, target, targetdir):
                 bElCon = HPC.get_el_con()
                 del HPC
             else:
-                bElCon = {'c%i'%i: np.nan for i in [1,2,3,4,5,6]}
+                bElCon = fail_elcon
 
             # after shear packing attrs
             bef, aft = getcc.get_first_cc(item, d)
@@ -119,14 +121,19 @@ def RunOnH5File(source, target, targetdir):
                 aElCon = HPC.get_el_con()
                 del HPC
             else:
-                aElCon = {'c%i'%i: np.nan for i in [1,2,3,4,5,6]}
+                aElCon = fail_elcon
           
             # build return dict
-            values = [delta] + zElCon.values() + bElCon.values() + aElCon.values()
-            keys = ['mean_delta_base'] + \
-                   [k + "_base" for k in zElCon.keys()] + \
-                   [k + "_min" for k in bElCon.keys()] + \
-                  [k + "_plus" for k in aElCon.keys()]
+            kvs = [('mean_delta_base', delta)]
+            for k,v in sorted(zElCon.items()):
+                kvs.append((k + "_base", v))
+            for k,v in sorted(bElCon.items()):
+                kvs.append((k + "_min", v))
+            for k,v in sorted(aElCon.items()):
+                kvs.append((k + "_plus", v))
+
+            keys = [k for k,v in kvs]
+            values = [v for k,v in kvs]
             
             dtypes = [(name, np.float64) for name in keys]
             
