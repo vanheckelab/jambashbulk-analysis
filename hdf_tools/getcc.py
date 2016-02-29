@@ -23,13 +23,13 @@ def get_first_ccs_base(group, data=None):
     if sum(diff(data["step#"]) != 1):
         raise Exception(("step ordering", group._v_pathname, diff(data["step#"])))
     #data.sort(order="step#") # because this sometimes is not the case O_o.
+    if len(data) == 0 or max(data["Nchanges"]) == 0:
+        raise Exception('no contact change at all!')
     
     if min(data['Nchanges']) != 0 and not missingzeroOK:
         raise Exception('no zero-change state')
     
-    if max(data["Nchanges"]) == 0:
-        raise Exception('no contact change at all!')
-        
+       
     if round(log10(data[0]["gamma"]),2) == -16:
         # remove incorrect first entry
         data = data[1:]
