@@ -19,6 +19,7 @@ import numpy as np
 import pandas
 import glob
 import tables
+from scipy.optimize import curve_fit
 
 import itertools
 import pytables_tools
@@ -45,10 +46,36 @@ def get_data_row(packing, packing_base=None):
     N = data["N"][0]
     P = data["P0"][0]
 
-    retval = dict(zip(['Nchanges_min', 'alpha_min', 'dH_base', 'dU_base', 'alpha_plus', 'delta_base', 'phi_min', 'sxy_calc_base', 'Uhelper_base', 'syy_calc_base', 'Nchanges_plus', 'L_base', 'num', 'i_min', 'P0_base', 's_xy_plus', 'L_min', 's_yy_plus', 'gamma_plus', 'N-_min', 'i_plus', 'phi_plus', 'maxGrad_base', 'P_calc_base', 'gg_min', 'syy_base', 'Z_base', 'N+_min', 'Neff_plus', 'P_min', 'Ncontacts_plus', 's_yy_min', 's_xy_min', 'dH_min', 'PackingNumber_base', 'Z_plus', 'gg_plus', 'phi_base', 'dU_min', 'Neff_min', 'P_base', 'Z_calc_base', 'alpha_base', 'N', 'P', 'U_calc_base', 'dU_plus', 'U_plus', 'P_plus', 'delta_plus', 'runtime (s)_base', 'L_plus', 'H_base', 'H_calc_base', 'N-_plus', 'gg_calc_base', 'H_plus', 'N - Ncorrected_base', 'delta_min', 's_xx_plus', 'N+_plus', 'sxx_calc_base', 'sxx_base', 'U_min', 'H_min', 'Z_min', 'gamma_min', 'Ncontacts_min', 'phi_calc_base', 'sxy_base', 'dH_plus', 's_xx_min'], itertools.repeat(nan)))    
+    data_reduced = data[:i_min+1]
+    data_reduced = data_reduced[data_reduced['gamma'] <= before['gamma']]
+
+    if len(data_reduced) < 5:
+        Glin = Glinerr = Gquad = Gquaderr = l = lerr = np.nan
+    else:
+        # linear fit through (0,0)
+        func = lambda gamma, G: gamma*G
+        (Glin,), pcov = curve_fit(func, data_reduced['gamma'], data_reduced['s_xy'])
+        try:
+            Glinerr = sqrt(pcov[0][0])
+        except TypeError:
+            Glinerr = np.nan
+
+        # quadratic fit through (0,0)
+        func = lambda gamma, l, G: gamma*G + gamma*gamma*l
+        (l, Gquad), pcov = curve_fit(func, data_reduced['gamma'], data_reduced['s_xy'])
+        try:
+            lerr = sqrt(pcov[0][0])
+            Gquaderr = sqrt(pcov[1][1])
+        except TypeError:
+            lerr = Gquaderr = np.nan
+
+    retval = dict(zip(['Nchanges_min', 'alpha_min', 'dH_base', 'dU_base', 'alpha_plus', 'delta_base', 'phi_min', 'sxy_calc_base', 'Uhelper_base', 'syy_calc_base', 'Nchanges_plus', 'L_base', 'num', 'i_min', 'P0_base', 's_xy_plus', 'L_min', 's_yy_plus', 'gamma_plus', 'N-_min', 'i_plus', 'phi_plus', 'maxGrad_base', 'P_calc_base', 'gg_min', 'syy_base', 'Z_base', 'N+_min', 'Neff_plus', 'P_min', 'Ncontacts_plus', 's_yy_min', 's_xy_min', 'dH_min', 'PackingNumber_base', 'Z_plus', 'gg_plus', 'phi_base', 'dU_min', 'Neff_min', 'P_base', 'Z_calc_base', 'alpha_base', 'N', 'P', 'U_calc_base', 'dU_plus', 'U_plus', 'P_plus', 'delta_plus', 'runtime (s)_base', 'L_plus', 'H_base', 'H_calc_base', 'N-_plus', 'gg_calc_base', 'H_plus', 'N - Ncorrected_base', 'delta_min', 's_xx_plus', 'N+_plus', 'sxx_calc_base', 'sxx_base', 'U_min', 'H_min', 'Z_min', 'gamma_min', 'Ncontacts_min', 'phi_calc_base', 'sxy_base', 'dH_plus', 's_xx_min', 'Glin', 'Glin_err', 'Gquad', 'Gquad_err', 'lambdaquad', 'lambdaquad_err'], itertools.repeat(nan)))    
     
     retval = {'N': N, 'P': P, 'num': num,
-              'i_min': i_min, 'i_plus': i_plus}
+              'i_min': i_min, 'i_plus': i_plus,
+              'Glin': Glin, 'Glinerr': Glinerr,
+              'Gquad': Gquad, 'Gquaderr': Gquaderr,
+              'lambdaquad': l, 'lambdaquaderr': lerr}
 
     retval.update(Neff_min= N-before["#rattler"],
                   Neff_plus=N-after["#rattler"])
@@ -76,7 +103,7 @@ def get_data_row(packing, packing_base=None):
     return retval
 
 STEPORDERS = []
-ignore_errnos = [22] #Invalid Argument due to empty file
+ignore_errnos = [2,22] #Invalid Argument due to empty file
 def get_data_rows(path, linrespath):
     paths = sorted(glob.glob(path))
     print paths
@@ -144,7 +171,7 @@ def get_data_rows(path, linrespath):
         sff.close()
         pff.close()
 
-def store_data_rows(frompath="/mnt/user/valhallasw/h5/NEW/*_shear.h5", linrespath="/mnt/user/valhallasw/auto/linres/", topath="/mnt/user/valhallasw/h5/shear_summary_noparticles_20131211.h5"):
+def store_data_rows(frompath="/mnt/user/valhallasw/auto/h5/*_shear.h5", linrespath="/mnt/user/valhallasw/auto/linres/", topath="/mnt/user/valhallasw/auto/shear_summary_noparticles_20150421.h5"):
     it = get_data_rows(frompath, linrespath)
     first = it.next()
 
