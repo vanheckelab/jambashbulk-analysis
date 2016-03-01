@@ -84,9 +84,17 @@ def get_first_ccs(group, data=None):
 
     return before, after   
 
-def get_multi_ccs(group, data=None, error_cutoff=1000):
+def get_multi_ccs(group, data=None, error_cutoff=1000, full=False):
     if data is None:
         data = get_first_ccs_base(group, data)["data"]
+    
+    try:
+        idxname = "index"
+        data[idxname]
+    except (KeyError, ValueError):
+        idxname = "step#"
+        data[idxname]
+        
     
     ordata = np.recarray.copy(data)
     data = np.recarray.copy(data)
@@ -99,6 +107,7 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
     for i in range(error_cutoff):
         try:
             result = get_first_ccs_base(group, data)
+            #print result
             lcid = id_ctr + result['lastconvergenceid'] + 1
         except KeyError:
             # no convergence found, assume = last id of array
@@ -106,6 +115,7 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
             stop = True
 
         subdata = result["subdata"]
+        print data["Nchanges"], subdata["Nchanges"]
         
         
         if amin(subdata["N+"] + subdata["N-"]) > 0:
@@ -119,13 +129,20 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
         
         before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
         before=before[0];
-        before = ordata[ordata["index"] == before["index"]][0]
+        before = ordata[ordata[idxname] == before[idxname]][0]
         
         after  = subdata[subdata["gamma"] == amin(subdata[subdata["Nchanges"] > 0]["gamma"])]
         after=after[0];
-        after = ordata[ordata["index"] == after["index"]][0]
+        after = ordata[ordata[idxname] == after[idxname]][0]
         
-        yield (before, after)
+        if full:
+            b = subdata[subdata["gamma"] <= before["gamma"]]
+            b.sort(order=["gamma"])
+            a = subdata[subdata["gamma"] >= after["gamma"]]
+            a.sort(order=["gamma"])
+            yield (b,a)
+        else:
+            yield (before, after)
         
         if not stop:
 
