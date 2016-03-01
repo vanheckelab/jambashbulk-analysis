@@ -88,6 +88,14 @@ def get_multi_ccs(group, data=None, error_cutoff=1000):
     if data is None:
         data = get_first_ccs_base(group, data)["data"]
     
+    try:
+        idxname = "index"
+        data[idxname]
+    except (KeyError, ValueError):
+        idxname = "step#"
+        data[idxname]
+        
+    
     ordata = np.recarray.copy(data)
     data = np.recarray.copy(data)
     
