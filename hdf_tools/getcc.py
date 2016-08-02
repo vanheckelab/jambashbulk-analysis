@@ -11,6 +11,9 @@ import numpy as np
 import sys
 
 def get_first_ccs_base(group, data=None):
+    """
+    Underlying function for get_first_cc et al. Do not use directly.
+    """
     if data is None:
         try:
             data = group.SR.data.read()
@@ -64,8 +67,11 @@ def get_first_ccs_base(group, data=None):
     return locals()
     
 def get_first_cc(group, data=None):
-    """Given a HDF group, returns the row (from the data array) just before and just after the CC"""
-    exec ""
+    """ Find the first contact change
+    Given a HDF group, returns the row (from the data array)
+    just before and just after the CC
+    """
+    exec ""  # to make the locals() update below work
     locals().update(get_first_ccs_base(group, data))
     
     before = subdata[subdata["gamma"] == amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
@@ -76,7 +82,16 @@ def get_first_cc(group, data=None):
     return before, after  
     
 def get_first_ccs(group, data=None):
-    exec ""
+    """ Find the first contact change
+    Given a HDF group, returns a tuple
+    ( [ rows from data array, all before the contact change ],
+      [ rows from data array, all after the contact change ]),
+
+    i.e., get_first_cc(A) = [get_first_ccs(A)[0][-1],
+                             get_first_ccs(A)[1][0]]
+
+    """
+    exec ""  # to make the locals() update below work
     locals().update(get_first_ccs_base(group, data))
     subdata.sort(order=["gamma"])
     before = subdata[subdata["gamma"] <= amax(subdata[subdata["Nchanges"] == 0]["gamma"])]
@@ -85,6 +100,13 @@ def get_first_ccs(group, data=None):
     return before, after   
 
 def get_multi_ccs(group, data=None, error_cutoff=1000, full=False):
+    """
+    Same as get_first_cc, but a generator which returns each subsequent contact
+    change. For example,
+    
+    get_multi_ccs(A).next() == get_first_cc(A);
+    get_multi_ccs(A, full=True).next() == get_first_ccs(A)
+    """
     if data is None:
         data = get_first_ccs_base(group, data)["data"]
     

@@ -3,7 +3,20 @@
 # @author: Merlijn van Deen <deen@physics.leidenuniv.nl>
 
 """
+Generate shear_summary_cache.h5, which summarizes the static system
+and the first contact change during shear.
 
+Usage:
+generate_cache.py \
+  <glob mask for all _shear files> \
+  <path to linear response data files>
+  <output file>
+
+e.g.
+generate_cache.py \
+  "/mnt/user/valhallasw/auto/h5/*_shear.h5" \
+  "/mnt/user/valhallasw/auto/linres/" \
+  "/mnt/user/valhallasw/auto/shear_summary_cache.h5"
 """
 
 import socket

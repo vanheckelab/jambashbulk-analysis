@@ -1,4 +1,27 @@
 # coding: utf-8
+"""
+Calculate linear elastic response for the static packing, and
+calculate linear elastic moduli for:
+  - static packing,
+  - just before the first cc,
+  - just after the first cc.
+
+Usage:
+
+RunOnH5File("N32~P2154e-6_shear.h5",
+            "N32~P2154e-6_linres.npy",
+            "full_linres/N32~P2154e-6/"
+)
+
+will read packings from `N32~P2154e-6_shear.h5` and `N32~P2154e-6_tables.h5`,
+and calculates the full elastic response to shear for each static packing
+(saved in full_linres/N32~P2154e-6/0002.npy etc).
+Linear response moduli (c1 ... c6) are calculated for the static packing,
+as well as just before and after the first contact change. These are saved to
+N32~P2154e-6_linres.npy.
+
+Typically called by doit (from dodo.py).
+"""
 import os
 from hpc import HessianPackingCalculator
 import tables

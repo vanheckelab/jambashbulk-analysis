@@ -4,6 +4,11 @@
 
 """
 pyTables helper functions
+
+Most of these are helper functions for `pytables_test.py` and
+`pytables_import_shear.py`. The exception to this is `read_packing`,
+which loads a packing from the hdf5 file to a dictionary, as used
+by most other code.
 """
 
 import tables
@@ -48,6 +53,27 @@ def add_to_table(table, data={}, **kwargs):
     row.append()
 
 def read_packing(pack):
+    """
+    in: pack -- pytables node containing a packing
+       (e.g. `/N1024/P3.1620e-03/0090` in N1024~P3162e-3_tables.h5,
+       or `/N1024/P3.1620e-03/0090/SR/0000` in N1024~P3.162e-3_shear.h5)
+
+    >>> import tables
+    >>> f = tables.File(r"N256~P1e-3_tables.h5")
+    >>> node = f.root.__getattr__('N256').__getattr__('p1.0000e-03').__getattr__('9000')
+    >>> read_packing(node)
+    { (...),
+        'L': 37.448300000000003,
+        'L1': array([ 37.28610578,   0.        ]),
+        'L2': array([ -0.19961572,  37.61113632]),
+        'N': 256,
+        ...
+        'particles': array([ (33.51530087911755, 2.706168622523819e-16, 25.13120589237754, -4.2327252813834093e-16, 1.0),
+                             ...
+                          ]),
+       (...)
+     }
+    """
     packing = dict((x, pack._v_attrs[x]) for x in pack._v_attrs._v_attrnames)
     packing['particles'] = pack.particles.read()
     return packing

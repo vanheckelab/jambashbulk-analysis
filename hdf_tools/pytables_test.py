@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
 """
+Import static packings into `_tables.h5` data files.
+
+Usage:
+    pytables_test.py <glob base> <output hdf file>
+
+For example:
+    pytables_test.py "Packings/N128~P001e-1" "h5/N128~P001e-1_tables.h5"
+
+    will read all packings in 'Packings/N128~P001e-1' and store them in "h5/N128~P001e-1_tables.h5".
+
 Created on Wed Jun 13 13:33:29 2012
 
 @author: deen

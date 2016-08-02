@@ -1,4 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+Tools for working with packings:
+ - get_contacts to determine overlaps and the connection matrix,
+ - V_harm to calculate energy, enthalpy and internal pressure,
+ - grad to calculate the gradient and stresses,
+ - Hess to calculate the extended Hessian,
+ - LinDef and El_Con to determine elastic moduli.
+
+Set V_harm.VISCOUS=True to disable rattler detection (for use in simulations with 
+viscous interactions, where the contept 'rattler' doesn't make sense)
+
+"""
 import numpy as np
 from numpy import floor, sqrt, sum, tril, where, diag, array, int_
 
@@ -18,7 +30,13 @@ def get_contacts(packing):
     """ In: packing={'particles': {'x': [...], 'y': [...], 'r': [...]},
                     {'L1': ..., 'L2': ..., 'L': ...}}
 
-        Out: {xij, yij, connmatrix (= Cij)}
+        Out: {xij, yij, rij,
+              dij (= overlaps, no underlaps),
+              dijfull (= both, underlaps as negative values),
+              nx, ny (= periodic boundary crossings for particle pair i,j),
+              rattlers (= list of all rattlers),
+              connmatrix (= Cij, boolean array whether particle i and j are in contact)
+              }
     """
     particles = packing['particles']
     
@@ -86,6 +104,13 @@ def get_contacts(packing):
     return {'xij': xij,'yij': yij,'rij':rij,'dij': dij, 'dijfull': dijfull, 'nx':nx,'ny':ny, 'connmatrix': connmatrix, 'rattlers':rattlers} 
 
 def V_harm(conts,packing):
+    """
+    Calculates energy, pressure and enthalpy.
+    In: conts = get_contacts(packing)['connmatrix'],
+        packing = packing
+    
+    Out: {'U':U,'P':P,'H':H}
+    """
     #the elastic constant :
     k_el=1
     
@@ -114,6 +139,9 @@ def V_harm(conts,packing):
         
         
 def grad(conts,packing):
+    """
+    Calculate gradients and stresses.
+    """
     #the elastic constant :
     k_el=1
     
@@ -179,6 +207,14 @@ def grad(conts,packing):
         
         
 def Hess(conts,packing):
+    """
+    Calculate extended Hessian.
+      
+    In: conts = get_contacts(packing)['connmatrix'],
+        packing = packing  
+
+    Out: extended Hessian (N+4 by N+4 array)
+    """
     #the elastic constant :
     k_el=1
     
@@ -280,6 +316,15 @@ class PackingException(Exception):
     pass
 
 def LinDef(K,rat,strain,packing):
+    """
+    Calculate linear elastic response to "strain" deformation.
+    K = extended hessian = Hess(get_contacts(packing)['connmatrix'], packing),
+    rat = list of rattlers = get_contacts(packing)['rattlers'],
+    strain = deformation triplet [Δxx, Δyy, Δxy=Δyx]
+    packing = packing
+
+    returns: energy change ΔU
+    """
     dU=np.array([])
     sz=strain.shape
     
@@ -342,6 +387,16 @@ def LinDef(K,rat,strain,packing):
 # El_con : calls lin-def for some given strains and deduces the elastic constants.
 
 def El_Con(K,rattlers,packing):
+    """ Calculate linear elastic moduli c1..c6.
+    K = extended hessian = Hess(get_contacts(packing)['connmatrix'], packing),
+    rat = list of rattlers = get_contacts(packing)['rattlers'],
+    packing = packing.clear
+
+    out = {'c': [c1, c2, c3, c4, c5, c6],
+           'Gdc':Gdc,'Gac':Gac,
+           'Udc':Udc,'Uac':Uac,
+           'Dac':Dac}
+    """
     lxx, lxy = packing["L1"]
     lyx, lyy = packing["L2"]
     
@@ -387,6 +442,7 @@ def El_Con(K,rattlers,packing):
         
         
 def Pmod(el_C):
+    """Print elastic moduli as returned by El_Con"""
     c=el_C['c']
     print '\n'+'lxxxx : '+str(c[0])
     print 'lyyyy : '+str(c[1])
@@ -400,51 +456,5 @@ def Pmod(el_C):
     print 'Gac : '+str(el_C['Gac'])
     print 'Udc : '+str(el_C['Udc'])
     print 'Uac : '+str(el_C['Uac'])
-    print 'Dac : '+str(el_C['Dac'])+'\n'        
-        
-        
-        
-        
-# WORK IN PROGRESS : 
-# attempt to use a reduced hessian K that has no translation mode. So far failed.
-        
-def K_notrans(K0,ndel) :
-    # trys : constraint with no translations : sum (X) = 0, sum(Y) = 0
-    Nr=K0.shape[0]/2
-    deletePart=np.array([ndel,Nr+ndel])
-    K1= np.delete(K0,deletePart,0)
-    K1= np.delete(K1,deletePart,1)
-    
-    # X :
-    Xrow_del=np.delete(K0[ndel,:],deletePart,0)
-    Xcol_del=np.delete(K0[:,ndel],deletePart,0)
-    Xdiag_del=K0[ndel,ndel]
-    Xrow_del[Nr-1:]=0
-    Xcol_del[Nr-1:]=0
-
-    Kmod1, Kmod2=np.meshgrid(Xrow_del,Xcol_del)
-    print Kmod1.shape
-    print Xrow_del.shape
-    print 'K0[ndel,0:17]: '
-    print K0[ndel,0:17]
-    print '\n'
-    print 'Xrow_del[0:17] : '
-    print Xrow_del[0:17]
-    print 'Kmod1[0,:] : '
-    print Kmod1[0,:]
-    
-    K1=K1-Kmod1-Kmod2 + Xdiag_del
-    
-    # Y :
-    Yrow_del=np.delete(K0[ndel+Nr,:],deletePart,0)
-    Ycol_del=np.delete(K0[:,ndel+Nr],deletePart,0)
-    Ydiag_del=K0[ndel+Nr,ndel+Nr]
-    Yrow_del[1:Nr]=0
-    Ycol_del[1:Nr]=0
-    
-    Kmod1, Kmod2=np.meshgrid(Yrow_del,Ycol_del)
-    
-    K1=K1-Kmod1-Kmod2 + Ydiag_del
-    
-    return K1
+    print 'Dac : '+str(el_C['Dac'])+'\n'
     

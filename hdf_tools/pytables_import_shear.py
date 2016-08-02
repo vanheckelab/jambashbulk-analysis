@@ -1,5 +1,24 @@
 # -*- coding: utf-8 -*-
 """
+Import `jambashbulk` shear simulation data into `_shear.h5` data files.
+
+Usage:
+    pytables_import_shear.py \
+        <glob of directories to include> \
+        <h5 file to store shear data in> \
+        <start id (counter in file)> \
+        [-noparticles]
+
+For example:
+    pytables_import_shear.py \
+    "Packings/N128*" \
+    N128_shear.h5 \
+    0
+
+The -noparticles flag creates an output file which does not include the particles for each
+intermediate state. This results in much smaller files, but requires you to read the particles
+from the raw data files when needed. 
+
 Created on Wed Jun 13 13:33:29 2012
 
 @author: deen

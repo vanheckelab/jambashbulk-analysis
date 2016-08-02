@@ -6,12 +6,13 @@
 Functions to load packing files.
 
 Supported formats:
-    - Jo's format, single packing
-    - Jo's format, multiple packings (e.g. shear simulations)
+    - jambashbulk format, single packing
+    - jambashbulk format, multiple packings (e.g. shear simulations)
+    - xconf format used by older simulations
     
 
-Jo's format
------------
+jambashbulk format
+------------------
 Example:
     
 ```
@@ -22,6 +23,10 @@ N = 16 ,L = 9.5144469664731326 ,L1= { 9.8178283514271385 , 0.0000000000000000 } 
 1.7389654101234185 ,	3.8493233607950302 ,	1.3999999999999999 ,	
 }
 ```
+
+Usage:
+loadPackings('N32~P1e-3~9000.txt') --> [{'N': 16, ..., 'particles': [..etc..]}]
+loadPacking(filename) only returns the first packing.
 """
 
 import os
@@ -62,11 +67,13 @@ def loadPacking(filename):
     return data[0]
 
 def savePacking(packing, filename, mode='w'):
+    """ Write the packing to the jambashbulk format. """
     f = open(filename, mode)
     f.write(strPacking(packing))
     f.close()
 
 def strPacking(packing):
+    """ Export the packing to a jambashbulk formatted string. """
     ret = []
     ret.append("N = {N} ,L = {L:.16f} ,L1= {{ {L1[0]:.16f} , {L1[1]:.16f} }}  ,L2= {{ {L2[0]:.16f} , {L1[0]:.16f} }}  ,P = {P:.16f} ,P0= {P0:.16f} ,".format(**packing))
     ret.append("{")
@@ -78,6 +85,7 @@ def strPacking(packing):
     return "\n".join(ret)
 
 def mirror(packing, x=True, y=False):
+    """ Mirror a packing by flipping the sign of x or y. """
     if y:
         raise Exception('not implemented')
 
@@ -205,6 +213,7 @@ def mkPackingLog(packingFile):
         pass
 
 def getPackings(folder):
+    """ Function to find missing log-files, to re-create them. """
     import warnings
     warnings.simplefilter("always", PackingWarning)
     prefix = getPrefix(folder)

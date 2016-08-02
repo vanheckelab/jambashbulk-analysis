@@ -51,6 +51,8 @@ cparser.read_header.argtypes = (c_void_p, POINTER(Header))
 cparser.read_particles.argtypes = (c_void_p, POINTER(c_longdouble))
         
 def create_packing(H, particles):
+    """ Create an packing dictionary based on the header (H) and particles
+    read from a jambashbulk data file. """
     x = particles[:,0]
     y = particles[:,1]
     r = particles[:,2]
@@ -63,7 +65,7 @@ def create_packing(H, particles):
                                                                          ('y', float64), ('y_err', float64),
                                                                          ('r', float64)])
 
-    return {'P0': H.P0,
+    return {
      'L': H.L,
      'N': H.N,
      'L1': array([H.L1x, H.L1y]),
@@ -73,6 +75,13 @@ def create_packing(H, particles):
      'particles': particles}
 
 def read_packings(fn):
+    """
+    Read packing(s) in the jambashbulk format. Generator, yields one packing each time.
+    
+    in: fn -- filename, e.g. N32~P1e-3~9000.txt or particlesN32~P1e-3~...etc...txt
+    
+    out: generator. Yields dictionaries describing packings.
+    """
     fptr = fopen(fn, "rb")
     
     if not fptr:

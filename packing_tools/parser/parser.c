@@ -34,9 +34,11 @@ void test() {
 
 int read_header(FILE * source, struct s_header *header)
 {
+    /* skip over comments */
     while(fgetc(source) == '#') while(fgetc(source) != '\n');
     fseek(source, -1, SEEK_CUR);
     int ctr = 0;
+    /* read first line, with N, L, L1, L2, P and P0 */
     ctr += fscanf(source, " N = %i ,", &header->N);
     if (ferror(source)) return ctr;
     ctr += fscanf(source, " L = %Lf ,", &header->L);

@@ -1,3 +1,6 @@
+""" Code to calculate elastic moduli for a range of packings. Superseded by linres/ data files.
+    (upar_uperp.dodo_HPC.RunOnH5File) """
+
 import tables
 import V_harm
 

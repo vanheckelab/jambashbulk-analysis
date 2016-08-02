@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Code to calculate linear response to a given deformation.
+
 Created on Thu Jan 24 11:32:09 2013
 
 @author: Merlijn van Deen
@@ -17,6 +19,11 @@ def subset(dictionary, keys):
 class HessianPackingCalculator(object):
     loaded = False
     def __init__(self, group):
+        """
+        Create a new HessianPackingCalculator. group can either be 
+        a pyTables group corresponding to a packing or a packing in
+        dictionary format
+        """
         self.loaded = True
         try:
             self.packing = dict((x, group._v_attrs[x]) for x in group._v_attrs._v_attrnames)
@@ -66,6 +73,23 @@ class HessianPackingCalculator(object):
         self.L = sqrt(self.L1[0]*self.L2[1])
 
     def deform_packing(self, deformation=1, gamma=1):
+        """
+        Deform a packing and calculate linear response.
+        deformation=1 is pure shear, 2 is simple shear.
+        gamma=1 is the magnitude of the applied deformation.
+
+        Returns a dict
+        {
+            'L1def': L1 (= (Lxx, Lxy) ) deformation,
+            'L2def': L2 (= (Lyx, Lyy) ) deformation, 
+            'delta_x': Δx for each particle,
+            'delta_y': Δy for each particle,
+            'forces_ext': forces on boundaries,
+            'energy_cost': energy cost
+        }
+
+        some internal calculation results are also exposed.
+        """
         assert(self.loaded)
         deformation_imposed_ext = zeros(self.K_ext.shape[0])
         
@@ -112,6 +136,14 @@ class HessianPackingCalculator(object):
         return locals()
 
     def plot_deformation(self, delta_x, delta_y, L1def, L2def):
+        """
+        Plot linear response of particles to an external deformation,
+        as calculated by deform_packing.
+        delta_x = deform_packing(...)['delta_x']
+        delta_y = deform_packing(...)['delta_y']
+        L1def = deform_packing(...)['L1def']
+        L2def = deform_packing(...)['L2def']
+        """
         assert(self.loaded)
         subplot(111, aspect="equal")
         axis((-self.L*0.3, self.L*1.3, -self.L*0.3, self.L*1.3))
@@ -151,6 +183,14 @@ class HessianPackingCalculator(object):
         self.plot_deformation(**params)    
 
     def get_uparrs(self, deformation=1, including_non_bonds=False):
+        """
+        Determine uperp and upar for each particle pair for a given deformation.
+        * deformation=1 is pure shear, =2 is simple shear.
+        * including_non_bonds=True includes uperp/upar for particles not in contact;
+          otherwise these entries are np.nan. 
+        
+        returns upar, uperp (both NxN arrays containing upar_{i,j} and uperp_{i,j}).
+        """
         assert(self.loaded)
         base = self.deform_packing(deformation)
         
@@ -180,6 +220,11 @@ class HessianPackingCalculator(object):
         return u_parr, u_perp
         
     def get_scaled_uparperps(self, deformation=1):
+        """
+        Return scaled upar/uperp as in
+            Ellenbroek et al., Phys. Rev. E 80, 061307, doi:10.1103/PhysRevE.80.061307
+            
+        """
         assert(self.loaded)
         u_parr, u_perp = self.get_uparrs(deformation=deformation)
 
@@ -194,7 +239,18 @@ class HessianPackingCalculator(object):
         return u_parr, u_parr_scaled, u_perp, u_perp_scaled
 
     def find_first_ccs(self):
-        """Returns gamma_min for mk and bk (in that order)
+        """
+        Calculate the first contact change under simple shear from linear response.
+        Two methods are used:
+          - simple linear: γ = δ/u∥
+          - full quadratic: solve (Ri + Rj)² = (δ + u∥ * γ)² + (u⊥ * γ)²
+
+        Returns {'gmk_FQ': ...,  # smallest making strain, full quadratic
+                 'gbk_FQ': ...,  # smallest breaking strain, full quadratic
+                 'gmk_SL': ...,  # smallest making strain, simple linear
+                 'gmk_FQ': ...   # smallest breaking strain, simple linear
+                }
+        Returns gamma_min for mk and bk (in that order)
            nan if not found..."""
         u_par, u_perp = self.get_uparrs(2, True)
         u_par = -u_par
@@ -250,6 +306,10 @@ class HessianPackingCalculator(object):
         return gmk, gbk
 
     def get_el_con(self):
+        """
+        Calculate elastic constants via V_harm.El_Con
+        (prevents re-calculating K)
+        """
         el_con = V_harm.El_Con(self.Hess, self.rattlers, self.packing)
         c = el_con.pop("c")
         for i, element in enumerate(c):
