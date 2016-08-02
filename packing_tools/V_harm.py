@@ -149,7 +149,7 @@ def grad(conts,packing):
     # Gradient alpha
     g_alpha= -0.5*sum(k_el*dij*ny*xhatij)
     # Gradient beta
-    g_delta=-0.5*sum(k_el*dij*(ny*yhatij-nx*xhatij/(1+delta)**2))
+    g_delta=np.nan # STUK -0.5*sum(k_el*dij*(ny*yhatij-nx*xhatij/(1+delta)**2))
     # Gradient L
     P=0.5*0.5*sum(k_el*dij*rij)/L**2
     g_L=2*L*(P-P0)
