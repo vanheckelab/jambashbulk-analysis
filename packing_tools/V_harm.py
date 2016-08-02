@@ -24,6 +24,7 @@ def get_contacts(packing):
     
     x=float128(particles['x'])
     y=float128(particles['y'])
+    r=float128(particles['r'])
  
     try:
         x += float128(particles['x_err'])
@@ -33,10 +34,12 @@ def get_contacts(packing):
     except KeyError:
         pass
     
-    xi, xj = np.meshgrid(particles['x'], particles['x'])
-    yi, yj = np.meshgrid(particles['y'], particles['y'])
-    
-    Ri, Rj = np.meshgrid(particles['r'], particles['r'])
+    #xi, xj = np.meshgrid(x,x)
+    #yi, yj = np.meshgrid(y,y)
+    #Ri, Rj = np.meshgrid(r,r)
+    xi = x; xj = x[:,np.newaxis]
+    yi = y; yj = y[:,np.newaxis]
+    Ri = r; Rj = r[:,np.newaxis]
     Rij=Ri+Rj
     
     lxx, lxy = packing["L1"]
