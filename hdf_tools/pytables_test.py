@@ -40,13 +40,13 @@ def create_group_for_packing(root, packing):
     
     return pkgroup
 
-def insert_attribute(node, key, value):
-    if getattr(value, 'dtype', type(value)) == bigfloat:
+def insert_attribute(node, key, value, cont=True):
+    if cont and getattr(value, 'dtype', type(value)) == bigfloat:
         #long double. split in two entries
         major = np.float64(value)
         minor = np.float64(value - bigfloat(major))
-        insert_attribute(node, key, major)
-        insert_attribute(node, key+"_err", minor)
+        insert_attribute(node, key, major, False)
+        insert_attribute(node, key+"_err", minor, False)
         return
     node._v_attrs[key] = value
 
