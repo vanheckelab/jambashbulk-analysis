@@ -115,7 +115,7 @@ def get_multi_ccs(group, data=None, error_cutoff=1000, full=False):
             stop = True
 
         subdata = result["subdata"]
-        print data["Nchanges"], subdata["Nchanges"]
+        #print data["Nchanges"], subdata["Nchanges"]
         
         
         if amin(subdata["N+"] + subdata["N-"]) > 0:
