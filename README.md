@@ -2,6 +2,9 @@ jambashbulk-analysis
 ====================
 (formerly known as `phd-library`).
 
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.60687.svg)](http://dx.doi.org/10.5281/zenodo.60687)
+
+
 This is a set of data analysis scripts to work with the output of
 the [jambashbulk](https://github.com/vanheckelab/jambashbulk) simulation,
 plus some general tools to aid in plotting.
